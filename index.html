@@ -51,7 +51,7 @@ img.ph{max-width:100%;border-radius:8px;margin-top:6px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.10.1';
+const VERSION = 'v2.10.2';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -726,6 +726,8 @@ const Q=[
 TR_QUIZ.forEach((x,i)=>{ x.q.ms=Q[i].q; x.o.ms=Q[i].o; x.e.ms=Q[i].e; });
 })();
 
+/* hidden staff shortcut: Ctrl+Alt+M opens the staff login (approvers, store) */
+document.addEventListener('keydown',e=>{ if(e.ctrlKey&&e.altKey&&String(e.key).toLowerCase()==='m'){ e.preventDefault(); location.href = BASE+'?mode=staff'; } });
 render();
 </script>
 </body>
