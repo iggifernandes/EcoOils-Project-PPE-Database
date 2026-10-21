@@ -1,4 +1,4 @@
-# PPE Request • Approval • Store Issue System v2.7.0 – Setup (free, ~20 min)
+# PPE Request • Approval • Store Issue System v2.10.1 – Setup (free, ~20 min)
 
 Use your PERSONAL Gmail for steps 1–4 (not the work email).
 
@@ -83,3 +83,43 @@ Use your PERSONAL Gmail for steps 1–4 (not the work email).
 
 ## After changing Code.gs later
 • Deploy > Manage deployments > edit > New version > Deploy (URL stays the same).
+
+
+## What is new in v2.10.1 – Project and Asset pools
+
+**The rule:** Project is a tight list that Iggy maintains. **Everyone and everything else is Asset.**
+
+• **Personnel > Pool column:** write `Project` only for the Project team. Blank or anything else = Asset.
+• **No choice screens.** The pool is decided automatically:
+  • A registered person → their own Pool.
+  • A new joiner with a sponsor → the sponsor's pool. A new joiner with their own email → Asset.
+  • A visitor loan → the host's pool.
+• **Two approvers:** Users has new **Email** and **Pool** columns. Iggy = approver, Pool = Project. Irfan = approver, Pool = Asset. Store = store, Pool = All. Each approver gets the emails, queue, stock, records and reports of their own pool only; the other pool's requests are refused.
+• **Store uploads stock per pool:** Stock tab > Upload stock. Choose the pool and paste lines `Item, Size, Quantity`. Quantities are added.
+• **Interchange between pools:** if the requester's pool is short at issue, the app asks "Issue from the other pool and record it as a pool loan?". Both approvers get an email. When stock arrives, tap **Repay** (Stock > Pool loans); stock moves back automatically, partial repayment allowed.
+• **Admin tab (approvers):** Yes / No switch per item for "approval required". No = self-service. Logged in the audit trail.
+• Existing stock rows with a blank Pool count as **Asset**.
+• Phone numbers: not needed.
+
+## What is new in v2.10.1 – team, recipients and reports
+
+• **Team in Users (one click):** in Apps Script run `loadTeamUsers` once. It adds or updates, without touching existing PINs:
+  • Iggy – approver – Ignatius.Ambrosio@ecooils.com.my – Pool Project
+  • Irfan – approver – irfan.amin@ecooils.co.id – Pool Asset
+  • Store 1 – Anthony Akbar – Anthony.Akbar@ecooils.co.id – Pool All
+  • Store 2 – Edolando Sembiring – Edolando.Sembiring@ecooils.co.id – Pool All
+  New people get a PIN of `CHANGE-ME-n`. **Replace each PIN in the Users sheet** (6+ digits, different for everyone, column formatted as Plain text).
+• **Recipients sheet (new):** who gets report emails. Columns: Email, Name, Type, Active.
+  • `MonthlyProject` – Darren.Lim@ecooils.com.my: on the 1st of each month at 08:00 WIB he gets the previous month's Project-only PPE issued (by item and by person) plus the total to date. No Asset information.
+  • `IssueAsset` – satish@ecooils.co.id: an email for **every Asset PPE issue**, sent when the store hands the PPE over (after HSSE approval, or self-service), showing who, what, approver, store person and receipt.
+  • To add or remove a recipient just edit this sheet. Set Active = No to pause.
+• **Both recipients start with Active = No, so no report email is sent until you switch them on.** When you are ready, set Active = Yes in the Recipients sheet (Darren, Satish). Nothing else needs to change.
+• To test Darren's report: set him Yes, then Apps Script > run `monthlyProjectReport`.
+
+## Upgrade steps (Action needed)
+
+1. Apps Script: replace Code.gs, Save, run `setup`, then run `loadTeamUsers`. Deploy > Manage deployments > edit > New version > Deploy.
+2. Users sheet: replace every `CHANGE-ME` PIN. Give each person their PIN privately.
+3. Personnel sheet: mark the Project team `Project` in the Pool column (everyone else = Asset).
+4. Stock tab: upload Project stock and Asset stock separately.
+5. GitHub: upload the new index.html (exact name). Hard refresh (Ctrl+F5).
