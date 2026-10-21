@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PPE Request & Issue – EcoOils Mentari</title>
+<style>
+:root{--g:#0b5d3b;--g2:#e8f3ee;--r:#b42318;--o:#b54708;--l:#d0d5dd;--m:#667085;--bg:#f6f7f8}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:#1a1a1a;padding-bottom:48px}
+header{background:var(--g);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header h1{font-size:16px;margin:0}.lang button{background:#ffffff22;color:#fff;border:1px solid #fff6;border-radius:6px;padding:4px 10px;margin-left:4px;cursor:pointer}
+.lang button.on{background:#fff;color:var(--g);font-weight:700}
+main{max-width:780px;margin:0 auto;padding:14px}
+.card{background:#fff;border:1px solid var(--l);border-radius:10px;padding:14px;margin-bottom:12px}
+.card.hl{outline:3px solid #f79009}
+label{display:block;font-size:13px;color:var(--m);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--l);border-radius:8px;font-size:16px;background:#fff}
+button{font-family:inherit;cursor:pointer}
+button.p{background:var(--g);color:#fff;border:0;border-radius:8px;padding:13px;font-size:16px;font-weight:700;width:100%;margin-top:12px}
+button.s{background:#fff;color:var(--g);border:1px solid var(--g);border-radius:8px;padding:9px 12px;font-size:14px}
+button.d{background:#fff;color:var(--r);border:1px solid var(--r);border-radius:8px;padding:9px 12px;font-size:14px}
+button:disabled{opacity:.5}
+.tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}.tabs button{flex:1 0 auto;padding:10px 12px;border:1px solid var(--l);background:#fff;border-radius:8px;font-size:14px;white-space:nowrap}
+.tabs button.on{background:var(--g);color:#fff;border-color:var(--g)}
+.row{display:grid;grid-template-columns:2fr 1fr 64px 34px;gap:6px;margin-bottom:6px}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700}
+.Requested{background:#fef0c7;color:var(--o)}.Approved{background:#d1e9ff;color:#175cd3}.Issued{background:#d1fadf;color:#027a48}.Rejected,.Voided,.Cancelled{background:#fee4e2;color:var(--r)}.Expired{background:#eaecf0;color:var(--m)}
+.err{background:#fee4e2;color:var(--r);padding:10px;border-radius:8px;margin-top:10px}.ok{background:#d1fadf;color:#027a48;padding:10px;border-radius:8px;margin-top:10px}
+.flag.inf{background:#d1e9ff;color:#175cd3}
+.flag{background:#fee4e2;color:var(--r);padding:4px 8px;border-radius:6px;font-size:13px;margin:3px 0;display:block}
+.small{font-size:13px;color:var(--m)}.rec{border-top:1px solid var(--l);padding:10px 0}.rec:first-child{border-top:0}
+.items{background:var(--g2);padding:8px 10px;border-radius:8px;margin:8px 0;font-weight:600}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin-bottom:10px}.sum div{background:#fff;border:1px solid var(--l);border-radius:8px;text-align:center;padding:8px 2px;font-size:12px;color:var(--m)}.sum b{display:block;font-size:20px;color:#1a1a1a}
+.bar{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}.bar span.n{width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar i{display:block;height:14px;background:var(--g);border-radius:4px}.bar b{font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{border-bottom:1px solid var(--l);padding:6px 4px;text-align:left}tr.low td{background:#fee4e2}
+.otp{font-size:34px;letter-spacing:8px;text-align:center}
+footer{position:fixed;bottom:0;left:0;right:0;text-align:center;background:#fff;border-top:1px solid var(--l);padding:8px;font-size:12px;color:var(--m)}
+.hide{display:none}
+img.ph{max-width:100%;border-radius:8px;margin-top:6px}
+@media print{header,.tabs,footer,.noprint{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body>
+<header><h1 id="ttl"></h1><div class="lang"><button id="le" onclick="setL('en')">EN</button><button id="li" onclick="setL('id')">ID</button></div></header>
+<main id="app"></main>
+<footer>EcoOils Mentari HSSE · PPE System · <span id="ver"></span></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ======= CONFIG: paste your Apps Script Web App URL below ======= */
+const API_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+const VERSION = 'v2.7.0';
+document.getElementById('ver').textContent = VERSION;
+
+const T = {
+en:{ttl:'PPE Request & Issue',newReq:'New request',mine:'My requests',company:'Department',name:'Your name',select:'Select…',notListed:'I am new / not in the list',sponsor:'Sponsor (your supervisor)',sponsorNote:'You have no email on file. Your sponsor receives the approval code and gives it to you. Bring your ID to the store.',idOk:'I checked the ID / badge of this person',sponsorL:'Sponsor',
+ visitors:'Visitors / loans',vNames:'Visitor name(s)',vCo:'Visitor company',host:'Host (required)',purpose:'Purpose (optional)',lend:'Lend PPE',outNow:'Out now',retBtn:'Mark returned',condL:'Condition',c_Good:'Good',c_Wash:'Needs washing',c_Damaged:'Damaged',writeOff:'Not returned – write off',writeWhy:'Reason for write-off?',overdue:'OVERDUE',histL:'Returned / closed',washDone:'Washed – back to stock',washQty:'How many are washed?',hostNote:'The host is emailed; if not returned they get a reminder.',
+  availT:'Availability',inStock:'In stock',lowS2:'Low',outS:'Out of stock',notTr:'Not tracked',chartT:'Stock level vs minimum',trendT:'Last 30 days',issuedL:'Issued / lent',recvL:'Received',laundryL:'In laundry',
+  careTab:'PPE care',careTitle:'Looking after your PPE',careIntro:'Good care keeps your PPE working, prevents injury and makes it last longer. This is a guide only – nothing here is required to get your PPE.',careTips:'Care tips',careNone:'No care guide for this item yet.',careView:'See care tips for your PPE',repNote:'Bring your old item to the store so a new one can be issued.',lostNote:'Lost PPE: please report it to the Head of Facility first.',facRep:'I have reported this to the Head of Facility',facName:'Reported to (name, optional)',oldRet:'Old item returned?',oldYes:'Yes – returned',oldNo:'No – not returned',oldNote:'Note (if not returned)',demandT:'Needed now (for procurement)',shortL:'short by',covered:'covered by stock',
+ items:'PPE needed',add:'+ Add item',kit:'Full joiner kit',logT:'Stock movements',refL:'Delivery note / PO ref',size:'Size',qty:'Qty',reason:'Reason',remark:'Remark (optional)',photo:'Photo of the damaged PPE',submit:'Submit request',
+ R_New:'New / joiner',R_Replacement_Worn:'Replacement – worn out',R_Replacement_Damaged:'Replacement – damaged',R_Lost:'Lost',R_Additional:'Additional / task specific',
+ sent:'Request sent. You will get an email with a collection code once HSSE approves it.',ref:'Reference',noReq:'No requests on this device yet.',cancel:'Cancel request',
+ s_Requested:'Waiting for approval',s_Approved:'Approved – check your email for the code, then go to the PPE store',s_Issued:'Issued',s_Rejected:'Rejected',s_Cancelled:'Cancelled',s_Expired:'Expired – submit a new request',s_Voided:'Voided',
+ pin:'PIN',login:'Log in',logout:'Log out',pending:'Approvals',collect:'Store issue',records:'Records',stock:'Stock',reports:'Reports',qr:'QR poster',
+ approve:'Approve',reject:'Reject',rejWhy:'Reason for rejecting?',voidWhy:'Reason for voiding?',void:'Void',viewPhoto:'View photo',history:'Past issues',
+ otp:'6-digit code from employee',issue:'Issue PPE',issued:'Issued. Receipt',none:'Nothing here.',expires:'Collect before',by:'Approved by',
+ f_NOT_IN_REGISTER:'⚠ Not in personnel register – details typed by the employee',f_SPONSORED:'⚠ Sponsored – code goes to sponsor: ',f_ID_CHECK:'⚠ ID check required at store',f_EARLY_REISSUE:'⚠ Early re-issue: ',f_LOST:'⚠ Reported lost',f_LOST_NOT_REPORTED:'⚠ Not yet reported to Head of Facility',f_DAMAGED:'⚠ Reported damaged',
+ all:'All',search:'Search name / ID / company',csv:'Export CSV',onhand:'On hand',min:'Min level',addStock:'Add / correct stock',itm:'Item',reasonTxt:'Reason / note',save:'Save',
+ print:'Print poster',scan:'Scan to request PPE',scanId:'Imbas untuk meminta APD',avgA:'Avg approval (h)',avgC:'Avg collection (h)',byMonth:'Issued per month (qty)',byItem:'By item',byCo:'By company',lowS:'Low stock',
+ ERR:{SPONSOR_REQUIRED:'Choose a sponsor.',SPONSOR_LIMIT:'This sponsor already has 5 open requests. Choose another.',ID_CHECK_REQUIRED:'Tick that you checked the ID.',HOST_REQUIRED:'Choose a host.',NOTHING_RETURNED:'Nothing marked as returned.',BAD_PIN:'Wrong PIN',LOCKED_TRY_LATER:'Too many tries. Wait 10 min.',NO_ITEMS:'Add at least one item (with size).',PHOTO_REQUIRED:'Photo required for damaged PPE.',PERSON_HAS_NO_EMAIL:'No email on file for you. Contact HSSE.',PERSON_NOT_FOUND:'Person not found.',DETAILS_REQUIRED:'Fill all details with a valid email.',TOO_MANY_OPEN:'You already have 3 open requests.',DUPLICATE_OPEN:'You already have an open request for',BAD_PHOTO:'Photo could not be read.',BAD_OTP:'Wrong code.',LOCKED:'Too many wrong codes. Void and ask for a new request.',EXPIRED:'Approval expired.',STOCK_LOW:'Not enough stock:',REASON_REQUIRED:'Reason is required.',EMAIL_FAILED:'Email to employee failed – not approved.',NOT_ALLOWED:'Not allowed for your role.',BAD_INPUT:'Check the input.',NETWORK:'Network error. Try again.',INVALID_LINK:'Invalid link.',CANNOT_CANCEL:'Cannot cancel now.'}},
+id:{ttl:'Permintaan & Penyerahan APD',newReq:'Permintaan baru',mine:'Permintaan saya',company:'Departemen',name:'Nama Anda',select:'Pilih…',notListed:'Saya karyawan baru / tidak ada di daftar',sponsor:'Sponsor (atasan Anda)',sponsorNote:'Anda belum punya email. Sponsor menerima kode persetujuan dan memberikannya kepada Anda. Bawa ID Anda ke gudang.',idOk:'Saya sudah memeriksa ID / badge orang ini',sponsorL:'Sponsor',
+ visitors:'Tamu / pinjaman',vNames:'Nama tamu',vCo:'Perusahaan tamu',host:'Host (wajib)',purpose:'Tujuan (opsional)',lend:'Pinjamkan APD',outNow:'Sedang dipinjam',retBtn:'Tandai dikembalikan',condL:'Kondisi',c_Good:'Baik',c_Wash:'Perlu dicuci',c_Damaged:'Rusak',writeOff:'Tidak dikembalikan – hapus',writeWhy:'Alasan penghapusan?',overdue:'TERLAMBAT',histL:'Dikembalikan / selesai',washDone:'Sudah dicuci – kembali ke stok',washQty:'Berapa yang sudah dicuci?',hostNote:'Host dikirimi email; jika tidak dikembalikan akan diingatkan.',
+  availT:'Ketersediaan',inStock:'Tersedia',lowS2:'Rendah',outS:'Habis',notTr:'Tidak dilacak',chartT:'Level stok vs minimum',trendT:'30 hari terakhir',issuedL:'Diserahkan / dipinjam',recvL:'Diterima',laundryL:'Di laundry',
+  careTab:'Perawatan APD',careTitle:'Merawat APD Anda',careIntro:'Perawatan yang baik menjaga APD tetap berfungsi, mencegah cedera dan membuatnya awet. Ini hanya panduan – tidak wajib untuk mendapatkan APD.',careTips:'Tips perawatan',careNone:'Belum ada panduan perawatan untuk item ini.',careView:'Lihat tips perawatan APD Anda',repNote:'Bawa APD lama ke gudang agar APD baru dapat diberikan.',lostNote:'APD hilang: mohon laporkan dahulu ke Head of Facility.',facRep:'Saya sudah melapor ke Head of Facility',facName:'Dilaporkan kepada (nama, opsional)',oldRet:'APD lama dikembalikan?',oldYes:'Ya – dikembalikan',oldNo:'Tidak dikembalikan',oldNote:'Catatan (jika tidak dikembalikan)',demandT:'Dibutuhkan sekarang (untuk pengadaan)',shortL:'kurang',covered:'tercukupi stok',
+ items:'APD yang dibutuhkan',add:'+ Tambah item',kit:'Paket lengkap karyawan baru',logT:'Mutasi stok',refL:'No. surat jalan / PO',size:'Ukuran',qty:'Jml',reason:'Alasan',remark:'Catatan (opsional)',photo:'Foto APD yang rusak',submit:'Kirim permintaan',
+ R_New:'Baru / karyawan baru',R_Replacement_Worn:'Pengganti – aus',R_Replacement_Damaged:'Pengganti – rusak',R_Lost:'Hilang',R_Additional:'Tambahan / sesuai tugas',
+ sent:'Permintaan terkirim. Anda akan menerima email berisi kode pengambilan setelah HSSE menyetujui.',ref:'Referensi',noReq:'Belum ada permintaan di perangkat ini.',cancel:'Batalkan permintaan',
+ s_Requested:'Menunggu persetujuan',s_Approved:'Disetujui – cek email untuk kode, lalu ke gudang APD',s_Issued:'Sudah diserahkan',s_Rejected:'Ditolak',s_Cancelled:'Dibatalkan',s_Expired:'Kedaluwarsa – ajukan permintaan baru',s_Voided:'Dibatalkan admin',
+ pin:'PIN',login:'Masuk',logout:'Keluar',pending:'Persetujuan',collect:'Gudang APD',records:'Catatan',stock:'Stok',reports:'Laporan',qr:'Poster QR',
+ approve:'Setujui',reject:'Tolak',rejWhy:'Alasan menolak?',voidWhy:'Alasan pembatalan?',void:'Batalkan',viewPhoto:'Lihat foto',history:'Riwayat',
+ otp:'Kode 6 digit dari karyawan',issue:'Serahkan APD',issued:'Diserahkan. Bukti',none:'Kosong.',expires:'Ambil sebelum',by:'Disetujui oleh',
+ f_NOT_IN_REGISTER:'⚠ Tidak ada di daftar personel – data diisi sendiri',f_SPONSORED:'⚠ Disponsori – kode ke sponsor: ',f_ID_CHECK:'⚠ Wajib cek ID di gudang',f_EARLY_REISSUE:'⚠ Penggantian terlalu cepat: ',f_LOST:'⚠ Dilaporkan hilang',f_LOST_NOT_REPORTED:'⚠ Belum dilaporkan ke Head of Facility',f_DAMAGED:'⚠ Dilaporkan rusak',
+ all:'Semua',search:'Cari nama / ID / perusahaan',csv:'Ekspor CSV',onhand:'Stok',min:'Batas min',addStock:'Tambah / koreksi stok',itm:'Item',reasonTxt:'Alasan / catatan',save:'Simpan',
+ print:'Cetak poster',scan:'Scan to request PPE',scanId:'Imbas untuk meminta APD',avgA:'Rata-rata persetujuan (jam)',avgC:'Rata-rata pengambilan (jam)',byMonth:'Diserahkan per bulan (jml)',byItem:'Per item',byCo:'Per perusahaan',lowS:'Stok rendah',
+ ERR:{SPONSOR_REQUIRED:'Pilih sponsor.',SPONSOR_LIMIT:'Sponsor ini sudah punya 5 permintaan terbuka. Pilih yang lain.',ID_CHECK_REQUIRED:'Centang bahwa ID sudah diperiksa.',HOST_REQUIRED:'Pilih host.',NOTHING_RETURNED:'Tidak ada yang dikembalikan.',BAD_PIN:'PIN salah',LOCKED_TRY_LATER:'Terlalu banyak percobaan. Tunggu 10 menit.',NO_ITEMS:'Tambahkan minimal satu item (dengan ukuran).',PHOTO_REQUIRED:'Foto wajib untuk APD rusak.',PERSON_HAS_NO_EMAIL:'Email Anda belum terdaftar. Hubungi HSSE.',PERSON_NOT_FOUND:'Personel tidak ditemukan.',DETAILS_REQUIRED:'Isi semua data dengan email valid.',TOO_MANY_OPEN:'Anda sudah punya 3 permintaan terbuka.',DUPLICATE_OPEN:'Anda sudah punya permintaan terbuka untuk',BAD_PHOTO:'Foto tidak terbaca.',BAD_OTP:'Kode salah.',LOCKED:'Terlalu banyak kode salah. Batalkan dan minta permintaan baru.',EXPIRED:'Persetujuan kedaluwarsa.',STOCK_LOW:'Stok tidak cukup:',REASON_REQUIRED:'Alasan wajib diisi.',EMAIL_FAILED:'Email ke karyawan gagal – tidak disetujui.',NOT_ALLOWED:'Tidak diizinkan untuk peran Anda.',BAD_INPUT:'Periksa input.',NETWORK:'Kesalahan jaringan. Coba lagi.',INVALID_LINK:'Tautan tidak valid.',CANNOT_CANCEL:'Tidak bisa dibatalkan.'}}
+};
+Object.assign(T.en,{trainTab:'Training',trainStaff:'Training',
+ sentAuto:'Recorded. These items need no approval – your pass code has been emailed. Show it (or its QR) at the PPE store.',
+ mkFree:'★ = no approval needed, pass code by email at once',mkLoan:'↺ = loaned from the store, return after use',
+ hFree:'No approval needed – your pass code is emailed at once.',hLoan:'Loaned item: it stays store property. Return it when the job is finished.',
+ splitNote:'Your request will be split: ★ items get a pass code at once, the others go to HSSE for approval.',
+ s_ApprovedAuto:'Ready – check your email for your pass code, then go to the PPE store',
+ passTitle:'Your PPE pass',passHow:'Show this at the PPE store. The storekeeper scans the QR or types the code.',passWarn:'Do not share this code. It can be used once.',passBad:'This pass link is not valid.',
+ f_AUTO:'Self-service item – no approval needed',f_ALREADY_ON_LOAN:'⚠ Already holds this on loan: ',
+ loanBanner:'LOAN – this item is lent, not given. Tell the person it must be returned to the store. Inspect it before handing over.',
+ harnessNote:'Harness: if it stopped a fall or is damaged, choose Damaged. It is not restocked and must be inspected by a competent person before any reuse.',
+ empLoan:'Employee loan',dueL:'Due',
+ trTitle:'New-joiner PPE training',trIntro:'About 20 minutes: how to request PPE, what each PPE is for and how to look after it. Based on the EcoOils PPE Procedure. Finish with the short quiz and record your training.',
+ trSrc:'Source: EOCORP-QSP/HS/03 Personal Protective Equipment Procedure (Rev 00). Care tips: EcoOils PPE Care & Replacement guide.',
+ trStd:'Standard',trRules:'Rules',trCare:'Care',trTask:'Task',trExtra:'Extra PPE on top of the basic set',trMatrixNote:'From the PPE Matrix. Your permit and job hazard analysis decide the final PPE.',
+ trQuiz:'Quiz',trCheck:'Check answers',trScore:'Your score',trPass:'Passed',trRetry:'Not yet – review the sections above and try again (pass mark 80%).',trAll:'Answer all questions first.',
+ trRecord:'Record my training',trRecorded:'Training recorded. Thank you.',trWho:'Who are you?',trKit:'Request my joiner kit',trPrint:'Print / save as PDF',
+ trRight:'Correct',trWrong:'Not quite',trTrained:'Training records',trDate:'Date',trScoreL:'Score'});
+Object.assign(T.id,{trainTab:'Pelatihan',trainStaff:'Pelatihan',
+ sentAuto:'Tercatat. Item ini tidak perlu persetujuan – kode pass sudah dikirim ke email. Tunjukkan kode (atau QR) di gudang APD.',
+ mkFree:'★ = tanpa persetujuan, kode pass langsung lewat email',mkLoan:'↺ = pinjaman dari gudang, kembalikan setelah dipakai',
+ hFree:'Tanpa persetujuan – kode pass langsung dikirim lewat email.',hLoan:'Item pinjaman: tetap milik gudang. Kembalikan setelah pekerjaan selesai.',
+ splitNote:'Permintaan Anda akan dipisah: item ★ langsung mendapat kode pass, sisanya diajukan ke HSSE untuk persetujuan.',
+ s_ApprovedAuto:'Siap – cek email untuk kode pass, lalu ke gudang APD',
+ passTitle:'Pass APD Anda',passHow:'Tunjukkan ini di gudang APD. Petugas gudang memindai QR atau mengetik kode.',passWarn:'Jangan bagikan kode ini. Hanya bisa dipakai sekali.',passBad:'Tautan pass tidak valid.',
+ f_AUTO:'Item layanan mandiri – tanpa persetujuan',f_ALREADY_ON_LOAN:'⚠ Masih meminjam item ini: ',
+ loanBanner:'PINJAMAN – item ini dipinjamkan, bukan diberikan. Beritahu bahwa wajib dikembalikan ke gudang. Periksa sebelum diserahkan.',
+ harnessNote:'Harness: jika pernah menahan jatuh atau rusak, pilih Rusak. Tidak dimasukkan kembali ke stok dan harus diperiksa orang kompeten sebelum dipakai lagi.',
+ empLoan:'Pinjaman karyawan',dueL:'Jatuh tempo',
+ trTitle:'Pelatihan APD karyawan baru',trIntro:'Sekitar 20 menit: cara meminta APD, fungsi tiap APD dan cara merawatnya. Berdasarkan Prosedur APD EcoOils. Akhiri dengan kuis singkat dan catat pelatihan Anda.',
+ trSrc:'Sumber: EOCORP-QSP/HS/03 Prosedur Alat Pelindung Diri (Rev 00). Tips perawatan: panduan Perawatan & Penggantian APD EcoOils.',
+ trStd:'Standar',trRules:'Aturan',trCare:'Perawatan',trTask:'Pekerjaan',trExtra:'APD tambahan di luar perlengkapan dasar',trMatrixNote:'Dari Matriks APD. Izin kerja dan analisis bahaya pekerjaan menentukan APD akhir.',
+ trQuiz:'Kuis',trCheck:'Periksa jawaban',trScore:'Nilai Anda',trPass:'Lulus',trRetry:'Belum – pelajari lagi bagian di atas dan coba lagi (nilai lulus 80%).',trAll:'Jawab semua pertanyaan dahulu.',
+ trRecord:'Catat pelatihan saya',trRecorded:'Pelatihan tercatat. Terima kasih.',trWho:'Siapa Anda?',trKit:'Minta paket karyawan baru',trPrint:'Cetak / simpan sebagai PDF',
+ trRight:'Benar',trWrong:'Kurang tepat',trTrained:'Catatan pelatihan',trDate:'Tanggal',trScoreL:'Nilai'});
+Object.assign(T.en.ERR,{AUTO_QTY:'Maximum 10 per line for items that need no approval.'});
+Object.assign(T.id.ERR,{AUTO_QTY:'Maksimal 10 per baris untuk item tanpa persetujuan.'});
+let L = localStorage.getItem('ppe_lang') || 'en';
+const t = k => T[L][k] || k, err = c => T[L].ERR[c] || c;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const BASE = location.origin + location.pathname;
+const REASONS = ['New','Replacement-Worn','Replacement-Damaged','Lost','Additional'];
+let catalog = [], people = [];
+
+async function api(body){
+  try{ const r = await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}); return await r.json(); }
+  catch(e){ return {ok:false,error:'NETWORK'}; }
+}
+const E = r => esc(err(r.error)) + (r.detail ? ' ' + esc(r.detail) : '') + (r.left != null ? ' ('+r.left+')' : '');
+function setL(l){ L=l; localStorage.setItem('ppe_lang',l); render(); }
+function fmt(d){ if(!d) return ''; return new Date(d).toLocaleString(L==='id'?'id-ID':'en-GB',{timeZone:'Asia/Jakarta',dateStyle:'medium',timeStyle:'short'})+' WIB'; }
+function itemsTxt(j){ try{ return (typeof j==='string'?JSON.parse(j):j).map(i=>i.qty+' × '+i.item+(i.size?' ('+i.size+')':'')).join(', ');}catch(e){return j;} }
+function flagsHtml(j){
+  let a=[]; try{ a = JSON.parse(j||'[]'); }catch(e){}
+  return a.map(f=>{ const p=f.split('|'); return '<span class="flag'+(p[0]==='AUTO'?' inf':'')+'">'+esc(t('f_'+p[0])+(p[1]?p[1]+(p[2]?' ('+p[2]+')':''):''))+'</span>'; }).join('');
+}
+function render(){
+  document.documentElement.lang = L; $('ttl').textContent = t('ttl');
+  $('le').className = L==='en'?'on':''; $('li').className = L==='id'?'on':'';
+  if(qs.get('pass')) return passView();
+  if(qs.get('mode')==='staff') return staffInit();
+  empInit();
+}
+
+/* ================= EMPLOYEE ================= */
+let eTab = ['care','train'].includes(qs.get('tab')) ? qs.get('tab') : 'new';
+function myList(){ try{ return JSON.parse(localStorage.getItem('ppe_my')||'[]'); }catch(e){ return []; } }
+/* ===== PPE care guide (informational, never required) ===== */
+const CARE = {
+ coverall:{t:{en:'FR coverall',id:'Coverall FR'},i:{
+  en:['Wash as per the maker’s instructions, mild detergent, warm (not hot) water. No bleach, fabric softener or harsh chemicals – they damage the FR treatment.','Tumble dry on low heat or hang dry. Avoid high heat.','Store clean and dry, away from direct sunlight and chemicals.','Inspect regularly for holes, tears and worn areas. Repair with FR-rated thread and patches, or replace.','Do not alter: no cutting, sewing or non-FR patches/logos unless certified FR.'],
+  id:['Cuci sesuai petunjuk pabrik, deterjen lembut, air hangat (bukan panas). Jangan pakai pemutih, pelembut atau bahan kimia keras – merusak lapisan FR.','Keringkan dengan panas rendah atau digantung. Hindari panas tinggi.','Simpan bersih dan kering, jauh dari sinar matahari langsung dan bahan kimia.','Periksa rutin lubang, robekan dan bagian aus. Perbaiki dengan benang dan tambalan berstandar FR, atau ganti.','Jangan dimodifikasi: tidak memotong, menjahit atau menambah tambalan/logo non-FR kecuali bersertifikat FR.']}},
+ helmet:{t:{en:'Safety helmet',id:'Helm safety'},i:{
+  en:['Clean the shell with mild soap and warm water. No harsh chemicals, solvents or abrasive cleaners.','Check for cracks, dents or deep scratches. Inspect the suspension for broken straps or worn parts and replace it if worn.','Keep away from heat sources, direct sunlight and chemicals.','Store in a cool, dry place. Do not hang on hooks that can deform the suspension.','Do not throw, drop or sit on it, and do not use it to carry or store things.'],
+  id:['Bersihkan cangkang dengan sabun lembut dan air hangat. Jangan gunakan bahan kimia keras, pelarut atau pembersih abrasif.','Periksa retak, penyok atau goresan dalam. Periksa suspensi dari tali putus atau bagian aus dan ganti jika aus.','Jauhkan dari sumber panas, sinar matahari langsung dan bahan kimia.','Simpan di tempat sejuk dan kering. Jangan digantung pada pengait yang dapat merusak suspensi.','Jangan dilempar, dijatuhkan atau diduduki, dan jangan dipakai untuk membawa atau menyimpan barang.']}},
+ shoes:{t:{en:'Safety shoes',id:'Sepatu safety'},i:{
+  en:['Wipe off dirt, oil and chemicals after each shift. Damp cloth for leather, mild soap for synthetic. No harsh chemicals.','Check the sole and toe cap. Replace if the sole is worn down or the toe cap is exposed.','If wet, air-dry at room temperature. Never use direct heat (heater or sunlight).','Store in a cool, dry place. Avoid damp lockers and hot vehicles.'],
+  id:['Lap kotoran, oli dan bahan kimia setelah setiap shift. Kain lembap untuk kulit, sabun lembut untuk sintetis. Jangan bahan kimia keras.','Periksa sol dan pelindung ujung. Ganti jika sol aus atau pelindung ujung terlihat.','Jika basah, keringkan pada suhu ruang. Jangan gunakan panas langsung (pemanas atau matahari).','Simpan di tempat sejuk dan kering. Hindari loker lembap dan kendaraan panas.']}},
+ gloves:{t:{en:'Gloves',id:'Sarung tangan'},i:{
+  en:['Disposable gloves: do not wash, discard after use.','Reusable gloves: rinse off dirt and chemicals immediately, wash with mild soap and lukewarm water.','Air-dry in a cool, well-ventilated area. No direct sunlight, heaters or dryers.','Before each use check for holes, tears, thinning or chemical damage. Replace immediately if compromised.','Store clean and dry, away from sunlight and chemicals. Do not fold or crush.'],
+  id:['Sarung tangan sekali pakai: jangan dicuci, buang setelah dipakai.','Sarung tangan pakai ulang: bilas kotoran dan bahan kimia segera, cuci dengan sabun lembut dan air suam.','Angin-anginkan di tempat sejuk dan berventilasi. Jangan di sinar matahari langsung, pemanas atau pengering.','Sebelum dipakai periksa lubang, robekan, menipis atau kerusakan kimia. Segera ganti jika rusak.','Simpan bersih dan kering, jauh dari sinar matahari dan bahan kimia. Jangan dilipat atau ditekan.']}},
+ glasses:{t:{en:'Safety glasses',id:'Kacamata safety'},i:{
+  en:['Clean with mild soap and water or a lens cleaning solution. Dry with a microfibre cloth, not paper towels.','Keep in a protective case when not in use. Do not leave them in hot places such as inside a car.','Check for scratches, cracks or loose parts. Replace if lenses are too scratched or the frame is damaged – visibility and safety are reduced.','Remove and put on with both hands. Do not place face-down on surfaces.'],
+  id:['Bersihkan dengan sabun lembut dan air atau cairan pembersih lensa. Keringkan dengan kain mikrofiber, bukan tisu.','Simpan di kotak pelindung saat tidak dipakai. Jangan tinggalkan di tempat panas seperti di dalam mobil.','Periksa goresan, retak atau bagian longgar. Ganti jika lensa terlalu tergores atau rangka rusak – mengurangi pandangan dan keselamatan.','Lepas dan pasang dengan dua tangan. Jangan diletakkan menghadap ke bawah.']}},
+ harness:{t:{en:'Full body harness (on loan)',id:'Full body harness (pinjaman)'},i:{
+  en:['On loan: it stays store property. Return it when the job is finished or when the store asks.','Before every use check the webbing, stitching, buckles and D-rings. If anything is damaged or doubtful, do not use it – return it to the store.','Adjust it to fit you, with the suspension trauma strap fitted.','After a fall or full load, stop using it. It stays out of service until a competent person (PPE Verifier) has inspected it.','Use it only to protect people, never for any other purpose.','Follow the maker’s manual for cleaning and storage.'],
+  id:['Pinjaman: tetap milik gudang. Kembalikan setelah pekerjaan selesai atau jika gudang meminta.','Sebelum dipakai periksa webbing, jahitan, gesper dan D-ring. Jika ada yang rusak atau meragukan, jangan dipakai – kembalikan ke gudang.','Sesuaikan agar pas, dengan tali suspension trauma terpasang.','Setelah jatuh atau menahan beban penuh, hentikan pemakaian. Tidak boleh dipakai sampai diperiksa orang kompeten (PPE Verifier).','Gunakan hanya untuk melindungi orang, tidak untuk keperluan lain.','Ikuti buku petunjuk pabrik untuk pembersihan dan penyimpanan.']}},
+ hearing:{t:{en:'Ear plugs & ear muffs',id:'Ear plug & ear muff'},i:{
+  en:['Fit them snugly with clean hands, free of dirt or grease, so they seal well.','You look after and check your own ear muffs; supervisors include hearing protection in their regular inspections.','Noise above 85 dB(A) needs hearing protection. People working in high-noise areas have an annual hearing test.'],
+  id:['Pasang dengan rapat menggunakan tangan bersih, bebas kotoran atau gemuk, agar menutup dengan baik.','Anda merawat dan memeriksa ear muff sendiri; supervisor memasukkan pelindung pendengaran dalam inspeksi rutin.','Kebisingan di atas 85 dB(A) memerlukan pelindung pendengaran. Pekerja di area bising tinggi menjalani tes pendengaran tahunan.']}},
+ resp:{t:{en:'Respirators & dust masks',id:'Respirator & masker debu'},i:{
+  en:['Tight-fitting respirators need medical fitness and a fit test (at least every 2 years, or after weight, dental or facial changes).','Be clean-shaven where the mask seals; no jewellery or make-up on the seal area.','The type to use is set by the site risk assessment or the chemical’s safety data sheet.'],
+  id:['Respirator ketat memerlukan kelayakan medis dan uji kecocokan (minimal tiap 2 tahun, atau setelah perubahan berat badan, gigi atau wajah).','Bersih cukur di area penyegelan masker; tanpa perhiasan atau make-up di area segel.','Jenis yang dipakai ditentukan oleh penilaian risiko lokasi atau lembar data keselamatan bahan kimia.']}}
+};
+function careKey(n){ n=String(n).toLowerCase();
+  if(n.includes('coverall')&&!n.includes('visitor')&&!n.includes('chemical')&&!n.includes('regular')) return 'coverall';
+  if(!n.includes('welding')&&(n.includes('hard hat')||n.includes('helmet')||n.includes('suspension')||n.includes('chin strap'))) return 'helmet';
+  if(n.includes('shoe')||n.includes('boot')) return 'shoes';
+  if(n.includes('harness')) return 'harness';
+  if(n.includes('ear plug')||n.includes('ear muff')) return 'hearing';
+  if(n.includes('respirator')||n.includes('n95')||n.includes('dust mask')) return 'resp';
+  if(n.includes('glove')&&!n.includes('electrician')) return 'gloves';
+  if(n.includes('glass')||n.includes('spec')) return 'glasses'; return ''; }
+function needsRet(n){ n=String(n).toLowerCase(); if(/disposable|chemical protective|visitor/.test(n)) return false; return /coverall|glass|glove|ear muff/.test(n); }
+function catOf(n){ return catalog.find(c=>c.Item===n)||{}; }
+function isFree(n){ return String(catOf(n).Approval).toLowerCase()==='no'; }
+function isLoanIt(n){ return String(catOf(n).Loan)==='Always'; }
+function mk(i){ return (String(i.Approval).toLowerCase()==='no'?' ★':'')+(String(i.Loan)==='Always'?' ↺':''); }
+function itemHint(n){ if(!n) return ''; return (isFree(n)?`<div class="small" style="color:#175cd3;margin:2px 0">★ ${t('hFree')}</div>`:'')+(isLoanIt(n)?`<div class="small" style="color:#b54708;margin:2px 0">↺ ${t('hLoan')}</div>`:''); }
+function splitNote(){ const its=readItems(), f=its.filter(i=>isFree(i.item)).length, p=its.length-f; $('splitnote').innerHTML = (f&&p)?`<div class="small" style="background:#d1e9ff;border-radius:8px;padding:8px;margin-top:6px">${t('splitNote')}</div>`:''; }
+function careBlock(k){ const c=CARE[k]; if(!c) return ''; return `<b>${esc(c.t[L])}</b><ul style="margin:6px 0 0;padding-left:18px;font-size:14px">${c.i[L].map(x=>`<li style="margin-bottom:4px">${esc(x)}</li>`).join('')}</ul>`; }
+function careDetails(itemName){ const k=careKey(itemName); return k?`<details style="margin:2px 0 8px"><summary class="small" style="cursor:pointer;color:var(--g)">${t('careTips')} – ${esc(CARE[k].t[L])}</summary><div class="small" style="background:var(--g2);border-radius:8px;padding:8px 10px;margin-top:4px">${careBlock(k)}</div></details>`:''; }
+function careView(){
+  $('pane').innerHTML = `<div class="card"><b>${t('careTitle')}</b><p class="small">${t('careIntro')}</p></div>` + Object.keys(CARE).map(k=>`<details class="card"><summary style="cursor:pointer"><b>${esc(CARE[k].t[L])}</b></summary><div style="margin-top:8px">${careBlock(k)}</div></details>`).join('');
+}
+function careRow(sel){ const w=sel.closest('.rw'); if(!w) return; const c=w.querySelector('.care'); c.innerHTML = itemHint(sel.value)+(sel.value?careDetails(sel.value):''); if($('splitnote')) splitNote(); }
+function repNote(){ const r=$('rsn').value; $('rnote').innerHTML = r.startsWith('Replacement')?`<div class="small" style="background:#fef0c7;border-radius:8px;padding:8px;margin-top:6px">${t('repNote')}</div>`:''; $('fac').classList.toggle('hide',r!=='Lost'); }
+async function empInit(){
+  $('app').innerHTML = `<div class="tabs"><button id="tN" onclick="eTab='new';empInit()">${t('newReq')}</button><button id="tM" onclick="eTab='mine';empInit()">${t('mine')}</button><button id="tC" onclick="eTab='care';empInit()">${t('careTab')}</button><button id="tT" onclick="eTab='train';empInit()">${t('trainTab')}</button></div><div id="pane"></div>`;
+  $('tN').className = eTab==='new'?'on':''; $('tM').className = eTab==='mine'?'on':''; $('tC').className = eTab==='care'?'on':''; $('tT').className = eTab==='train'?'on':'';
+  if(eTab==='mine') return mineView();
+  if(eTab==='care') return careView();
+  if(!catalog.length){ const [a,b] = await Promise.all([api({action:'items'}),api({action:'people'})]); if(a.ok) catalog=a.items; if(b.ok) people=b.people; }
+  if(eTab==='train') return trainView();
+  formView();
+}
+function formView(){
+  const cos = [...new Set(people.map(p=>p.Company))].sort();
+  $('pane').innerHTML = `<div class="card">
+  <div id="reg"><label>${t('company')}</label><select id="co" onchange="fillNames()"><option value="">${t('select')}</option>${cos.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
+  <label>${t('name')}</label><select id="per" onchange="needSpon()"><option value="">${t('select')}</option></select></div>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="nl" style="width:auto" onchange="$('manual').classList.toggle('hide',!this.checked);$('reg').classList.toggle('hide',this.checked);needSpon()"> ${t('notListed')}</label>
+  <div id="manual" class="hide"><label>${t('name')}</label><input id="mn"><label>${t('company')}</label><input id="mc" list="depts"><datalist id="depts">${cos.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+  <div id="spon" class="hide"><div class="small" style="margin-top:8px">${t('sponsorNote')}</div><label>${t('sponsor')}</label><select id="sc" onchange="sponNames()"><option value="">${t('company')}…</option>${[...new Set(people.filter(p=>p.Sponsor).map(p=>p.Company))].sort().map(c=>`<option>${esc(c)}</option>`).join('')}</select><select id="sp" style="margin-top:6px"><option value="">${t('select')}</option></select></div>
+  <label>${t('items')}</label><div id="rows"></div><div class="small" style="margin:4px 0">${t('mkFree')} · ${t('mkLoan')}</div><button class="s" onclick="addRow()">${t('add')}</button> <button class="s" onclick="addKit()">${t('kit')}</button><div id="splitnote"></div>
+  <label>${t('reason')}</label><select id="rsn" onchange="repNote()">${REASONS.map(r=>`<option value="${r}">${t('R_'+r.replace('-','_'))}</option>`).join('')}</select>
+  <div id="rnote"></div><div id="fac" class="hide"><div class="small" style="background:#fef0c7;border-radius:8px;padding:8px;margin-top:6px">${t('lostNote')}</div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="fr" style="width:auto"> ${t('facRep')}</label><input id="fn" placeholder="${t('facName')}"></div>
+  <label>${t('remark')}</label><textarea id="rm" rows="2"></textarea>
+  <button class="p" id="go" onclick="submitReq()">${t('submit')}</button><div id="msg"></div></div>`;
+  addRow();
+}
+function needSpon(){ const man=$('nl').checked, p=people.find(x=>x.PersonID==$('per').value); $('spon').classList.toggle('hide',!(man||(p&&p.NoEmail))); }
+function sponNames(){ const c=$('sc').value; $('sp').innerHTML=`<option value="">${t('select')}</option>`+people.filter(p=>p.Sponsor&&p.Company===c).sort((a,b)=>a.Name.localeCompare(b.Name)).map(p=>`<option value="${esc(p.PersonID)}">${esc(p.Name)}</option>`).join(''); }
+function fillNames(){ const c=$('co').value; $('per').innerHTML = `<option value="">${t('select')}</option>` + people.filter(p=>p.Company===c).sort((a,b)=>a.Name.localeCompare(b.Name)).map(p=>`<option value="${esc(p.PersonID)}">${esc(p.Name)}</option>`).join(''); }
+function addKit(){ if(!$('rows')) return; $('rows').innerHTML=''; catalog.filter(i=>String(i.Kit).toLowerCase()==='yes').forEach(i=>addRow(i.Item)); $('rsn').value='New'; repNote(); splitNote(); }
+function addRow(pre){
+  const w = document.createElement('div'); w.className='rw'; const d = document.createElement('div'); d.className='row';
+  d.innerHTML = `<select class="it" onchange="sizes(this);careRow(this)"><option value="">${t('select')}</option>${[...new Set(catalog.map(i=>i.Category))].map(c=>`<optgroup label="${esc(c)}">${catalog.filter(i=>i.Category===c).map(i=>`<option value="${esc(i.Item)}" data-s="${esc(i.Sizes)}">${esc(i.Item)}${mk(i)}</option>`).join('')}</optgroup>`).join('')}</select><select class="sz"><option value="">${t('size')}</option></select><input class="qt" type="number" min="1" max="20" value="1"><button class="d" onclick="this.closest('.rw').remove();splitNote()">×</button>`;
+  const cr = document.createElement('div'); cr.className='care'; w.appendChild(d); w.appendChild(cr); $('rows').appendChild(w);
+  if(typeof pre==='string'){ const s=d.querySelector('.it'); s.value=pre; sizes(s); careRow(s); }
+}
+function sizes(sel){
+  const s=(sel.selectedOptions[0].dataset.s||'').split(',').filter(Boolean), z=sel.parentNode.querySelector('.sz');
+  z.innerHTML = '<option value="">'+(s.length?t('size'):'–')+'</option>'+s.map(x=>`<option>${esc(x)}</option>`).join('');
+}
+function readItems(){
+  return [...document.querySelectorAll('#rows .row')].map(r=>({item:r.querySelector('.it').value,size:r.querySelector('.sz').value,qty:r.querySelector('.qt').value,need:r.querySelector('.sz').options.length>1})).filter(i=>i.item);
+}
+function compress(file){
+  return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ const k=Math.min(1,900/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=im.width*k; c.height=im.height*k; c.getContext('2d').drawImage(im,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',0.6)); }; im.onerror=rej; im.src=fr.result; }; fr.onerror=rej; fr.readAsDataURL(file); });
+}
+async function submitReq(){
+  const items = readItems(), man = $('nl').checked, reason = $('rsn').value;
+  if(!items.length || items.some(i=>i.need && !i.size)) return $('msg').innerHTML = '<div class="err">'+esc(err('NO_ITEMS'))+'</div>';
+  const body = {action:'submit',items:items.map(({item,size,qty})=>({item,size,qty})),reason,remark:$('rm').value,facilityReported:reason==='Lost'&&$('fr').checked,facilityName:reason==='Lost'?$('fn').value.trim():''};
+  if(man){ body.newPerson = {name:$('mn').value.trim(),company:$('mc').value.trim()}; }
+  else { body.personId = $('per').value; if(!body.personId) return $('msg').innerHTML = '<div class="err">'+esc(t('name'))+'?</div>'; }
+  if(!$('spon').classList.contains('hide')) body.sponsorId = $('sp').value;
+  $('go').disabled = true;
+  const r = await api(body);
+  if(!r.ok){ $('go').disabled=false; return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>'; }
+  const parts = r.parts||[{id:r.id,token:r.token,auto:false}], l = myList(); parts.slice().reverse().forEach(pp=>l.unshift({id:pp.id,token:pp.token})); localStorage.setItem('ppe_my',JSON.stringify(l.slice(0,20)));
+  $('pane').innerHTML = `<div class="card">${parts.map(pp=>`<div class="ok">${t(pp.auto?'sentAuto':'sent')}</div><p>${t('ref')}: <b>${esc(pp.id)}</b></p>`).join('')}<button class="p" onclick="eTab='mine';empInit()">${t('mine')}</button><button class="s" style="width:100%;margin-top:8px" onclick="eTab='care';empInit()">${t('careView')}</button></div>`;
+}
+async function mineView(){
+  const l = myList(); if(!l.length) return $('pane').innerHTML = `<div class="card small">${t('noReq')}</div>`;
+  $('pane').innerHTML = '<div id="ml"></div>';
+  const rs = await Promise.all(l.map(x=>api({action:'status',id:x.id,token:x.token}).then(r=>({r,x}))));
+  $('ml').innerHTML = rs.filter(z=>z.r.ok).map(({r,x})=>`<div class="card"><b>${esc(r.id)}</b> <span class="pill ${r.status}">${esc(r.status)}</span>
+   <div class="items">${esc(itemsTxt(r.approvedItems||r.items))}</div><div class="small">${esc(t(r.status==='Approved'&&r.auto?'s_ApprovedAuto':'s_'+r.status))}<br>${fmt(r.createdAt)}${r.status==='Approved'?'<br>'+t('expires')+': '+fmt(r.expires):''}${r.status==='Issued'?'<br>'+fmt(r.issuedAt)+' · '+esc(r.receipt):''}${r.status==='Rejected'?'<br>'+esc(r.note):''}</div>
+   ${r.status==='Issued'?`<button class="s" style="margin-top:8px" onclick="eTab='care';empInit()">${t('careView')}</button>`:''}
+   ${r.status==='Requested'?`<button class="d" style="margin-top:8px" onclick="cancelReq('${esc(x.id)}','${esc(x.token)}')">${t('cancel')}</button>`:''}</div>`).join('');
+}
+async function cancelReq(id,token){ const r = await api({action:'cancel',id,token}); if(!r.ok) alert(err(r.error)); mineView(); }
+
+/* ================= PASS (QR for the store) ================= */
+function passView(){
+  const id = (qs.get('pass')||'').replace(/[^A-Za-z0-9-]/g,''), code = (location.hash||'').replace(/\D/g,'').slice(0,6);
+  if(!id || code.length!==6) return $('app').innerHTML = `<div class="card"><div class="err">${t('passBad')}</div></div>`;
+  $('app').innerHTML = `<div class="card" style="text-align:center"><h2 style="margin:4px 0">${t('passTitle')}</h2><div class="small">${esc(id)}</div><div class="otp" style="margin:12px 0;font-weight:700;color:var(--g)">${esc(code)}</div><div id="pq" style="display:flex;justify-content:center;margin:12px"></div><div>${t('passHow')}</div><div class="small" style="margin-top:8px">${t('passWarn')}</div></div>`;
+  if(window.QRCode) new QRCode($('pq'),{text:BASE+'?mode=staff&req='+encodeURIComponent(id)+'&code='+code,width:240,height:240});
+}
+
+/* ================= NEW-JOINER TRAINING ================= */
+const TR_SEC = [
+ {t:{en:'1. Before you start: what PPE is for',id:'1. Sebelum mulai: fungsi APD'},
+  en:['PPE protects you from injury and occupational illness, but it is the LAST line of defence. It does not replace safer work methods, engineering controls or good work practice.','Order of control: eliminate the hazard, substitute it, engineer it out, use procedures – and only then PPE.','PPE must be the right type for the hazard, in good condition and used correctly. Your supervisor selects it for your task (job hazard analysis) and trains you.'],
+  id:['APD melindungi Anda dari cedera dan penyakit akibat kerja, tetapi merupakan pertahanan TERAKHIR. APD tidak menggantikan metode kerja yang lebih aman, pengendalian teknik atau praktik kerja yang baik.','Urutan pengendalian: hilangkan bahaya, ganti, pengendalian teknik, prosedur – baru APD.','APD harus sesuai bahaya, dalam kondisi baik dan dipakai dengan benar. Supervisor memilihnya sesuai tugas (analisis bahaya pekerjaan) dan melatih Anda.']},
+ {t:{en:'2. Basic PPE for the process area',id:'2. APD dasar untuk area proses'},
+  en:['Everyone entering a process area wears: safety helmet, safety glasses, safety boots and an FR coverall.','Ear plugs and gloves: keep them with you, within easy reach, and use them when required (signs, noisy work, hand hazards). The PPE matrix lists ear plugs in the basic set.','No PPE needed in: the Central Control Room, non-process offices, meeting rooms, canteen, temple and restrooms.','The laboratory and workshop have their own PPE requirements.','Visitors entering the process area wear an FR coverall too. Their host gets it for them.'],
+  id:['Setiap orang yang masuk area proses memakai: helm safety, kacamata safety, sepatu safety dan coverall FR.','Ear plug dan sarung tangan: bawa, mudah dijangkau, dan pakai bila diperlukan (rambu, pekerjaan bising, bahaya tangan). Matriks APD memasukkan ear plug dalam perlengkapan dasar.','Tidak perlu APD di: Ruang Kontrol Pusat, kantor non-proses, ruang rapat, kantin, tempat ibadah dan toilet.','Laboratorium dan bengkel memiliki persyaratan APD sendiri.','Tamu yang masuk area proses juga memakai coverall FR. Host-nya yang menyediakan.']},
+ {t:{en:'3. Extra PPE for specific tasks',id:'3. APD tambahan untuk tugas tertentu'},matrix:true},
+ {t:{en:'4. How to request PPE here',id:'4. Cara meminta APD di sini'},ol:true,
+  en:['Scan the QR poster or open the PPE app link. Choose your department and name. Not in the list (new joiner)? Tick “I am new” and choose a sponsor – the code goes to your sponsor and you show your ID at the store.','Pick the items and sizes. New joiner: tap “Full joiner kit” and choose reason “New”. Replacement: bring the old item (coverall, glasses, gloves, ear muffs). Lost: report it to the Head of Facility first.','Items marked ★ (ear plugs, safety glasses, gloves, rubber gloves) need NO approval: your request is recorded and the pass code arrives by email at once.','All other items go to the HSSE Manager for approval. When approved you get a 6-digit code by email (valid 14 days).','Go to the PPE store. Show the code or the QR pass from the email. The storekeeper scans or types it and hands over your PPE. You receive a receipt by email.','The full body harness ↺ is LOANED: it stays store property. Request it like other PPE (needs approval), return it to the store when the job is finished and the store records its condition. You get a reminder if it is overdue.','Limits: up to 3 open requests per person, and no second open request for the same item.','Every request, approval and issue is recorded, so PPE cannot be collected in your name without your code.'],
+  id:['Pindai poster QR atau buka tautan aplikasi APD. Pilih departemen dan nama Anda. Tidak ada di daftar (karyawan baru)? Centang “Saya karyawan baru” dan pilih sponsor – kode dikirim ke sponsor dan Anda menunjukkan ID di gudang.','Pilih item dan ukuran. Karyawan baru: ketuk “Paket lengkap karyawan baru” dan pilih alasan “Baru”. Penggantian: bawa item lama (coverall, kacamata, sarung tangan, ear muff). Hilang: lapor dulu ke Head of Facility.','Item bertanda ★ (ear plug, kacamata safety, sarung tangan, sarung tangan karet) TIDAK perlu persetujuan: permintaan dicatat dan kode pass langsung dikirim lewat email.','Item lainnya masuk ke HSSE Manager untuk disetujui. Setelah disetujui Anda menerima kode 6 digit lewat email (berlaku 14 hari).','Datang ke gudang APD. Tunjukkan kode atau QR pass dari email. Petugas gudang memindai atau mengetik kode lalu menyerahkan APD. Anda menerima bukti lewat email.','Full body harness ↺ DIPINJAMKAN: tetap milik gudang. Ajukan seperti APD lain (perlu persetujuan), kembalikan ke gudang setelah pekerjaan selesai dan gudang mencatat kondisinya. Anda mendapat pengingat jika terlambat.','Batas: maksimal 3 permintaan terbuka per orang, dan tidak ada permintaan terbuka kedua untuk item yang sama.','Setiap permintaan, persetujuan dan penyerahan tercatat, sehingga APD tidak dapat diambil atas nama Anda tanpa kode Anda.']},
+ {t:{en:'5. Your PPE, one by one',id:'5. APD Anda, satu per satu'},ppe:true},
+ {t:{en:'6. Your responsibilities',id:'6. Tanggung jawab Anda'},
+  en:['Follow the PPE procedure and use the PPE prescribed for the work.','Check every PPE item is in good working condition before work. Damaged or faulty PPE is replaced BEFORE you start.','Clean your PPE as the maker recommends and look after it.','Special PPE such as breathing apparatus needs competence and certification.','Report lost PPE to the Head of Facility first, then request a replacement.','Supervisors: make sure PPE is fit for purpose, people are trained, PPE is used correctly and replaced when needed.'],
+  id:['Ikuti prosedur APD dan pakai APD yang ditetapkan untuk pekerjaan.','Periksa setiap APD dalam kondisi baik sebelum bekerja. APD rusak atau bermasalah diganti SEBELUM Anda mulai.','Bersihkan APD sesuai rekomendasi pabrik dan rawat dengan baik.','APD khusus seperti alat bantu pernapasan memerlukan kompetensi dan sertifikasi.','Laporkan APD hilang ke Head of Facility dahulu, lalu ajukan penggantian.','Supervisor: pastikan APD sesuai tujuan, orang terlatih, APD dipakai dengan benar dan diganti bila perlu.']}
+];
+const TR_TASKS = [
+ ['Hexane handling','Penanganan heksana','Half Face Respirator + OV cartridge'],
+ ['SBE handling','Penanganan SBE','Chemical Protective Coverall, Full Face Respirator + P3 filter'],
+ ['Welding (workshop)','Pengelasan (bengkel)','Welding Helmet, Welding Visor'],
+ ['Chemical dosing','Dosis bahan kimia','Safety Goggles, Face Shield, Apron, Chemical Boots'],
+ ['Grass cutting','Pemotongan rumput','Ear Plugs, Face Shield, Apron, Safety Boots'],
+ ['Product loading','Pemuatan produk','High Visibility Garment, Safety Harness'],
+ ['PPM loading','Pemuatan PPM','Safety Harness'],
+ ['Gutter cleaning','Pembersihan talang','Safety Harness'],
+ ['SBE unloading','Pembongkaran SBE','High Visibility Garment, N95 Dust Mask'],
+ ['Welding / hot work','Pengelasan / pekerjaan panas','Welding Visor']
+];
+const TR_PPE = [
+ {k:'helmet',care:'helmet',t:{en:'Safety helmet',id:'Helm safety'},std:'EN 397 · DOSH',
+  en:['White helmet for EcoOils staff. New joiners (and contractor partners) wear a yellow helmet for their first year.','The chin strap must be ready when you enter site and worn at ALL times.','Only DOSH-approved safety helmets are allowed on site.','Replace it after any impact or drop, when the head cradle is damaged, or 5 years after the manufacture date (polycarbonate). The date is stamped inside the helmet. Suspensions and liners are replaced as the maker recommends.'],
+  id:['Helm putih untuk staf EcoOils. Karyawan baru (dan mitra kontraktor) memakai helm kuning selama tahun pertama.','Tali dagu harus siap saat masuk lokasi dan dipakai SETIAP SAAT.','Hanya helm safety bersertifikat DOSH yang boleh dipakai di lokasi.','Ganti setelah terbentur atau jatuh, jika dudukan kepala rusak, atau 5 tahun sejak tanggal produksi (polikarbonat). Tanggalnya tercetak di dalam helm. Suspensi dan liner diganti sesuai rekomendasi pabrik.']},
+ {k:'coverall',care:'coverall',t:{en:'FR coverall',id:'Coverall FR'},std:'NFPA 2112',
+  en:['Wear the approved FR coverall at all times in process areas. The EcoOils employee colour is blue.','It must be the outermost garment – nothing is worn over it.','No polyester, nylon or acetate underneath (e.g. Dri-Fit, Under Armour): they melt under heat and burn skin even under FR.','Sleeves rolled down, cuffs fastened, zip closed and all buttons done up to the chest.','Keep it clean – not soaked with oil, hydrocarbons or chemicals.','Damage is repaired, or the coverall replaced, the same day.'],
+  id:['Pakai coverall FR yang disetujui setiap saat di area proses. Warna coverall karyawan EcoOils adalah biru.','Harus menjadi pakaian terluar – tidak ada pakaian lain di atasnya.','Jangan memakai poliester, nilon atau asetat di dalamnya (mis. Dri-Fit, Under Armour): meleleh saat panas dan membakar kulit meski memakai FR.','Lengan diturunkan, manset dikancing, ritsleting dan semua kancing ditutup sampai dada.','Jaga tetap bersih – tidak terkena oli, hidrokarbon atau bahan kimia.','Kerusakan diperbaiki, atau coverall diganti, pada hari yang sama.']},
+ {k:'cpc',t:{en:'Chemical protective coverall (CPC)',id:'Coverall pelindung kimia (CPC)'},std:'EN 13982-1 (Type 5) · EN 13034 (Type 6) · EN 1149-5',
+  en:['Used when the permit says so – it is specified on the permit and explained to the permit receiver.','It is the outermost garment. A contaminated suit must be decontaminated before you take it off.','Type 5 = dry dust particles. Type 6 = limited liquid spray and splash.'],
+  id:['Dipakai bila izin kerja mensyaratkannya – tercantum pada izin dan dijelaskan kepada penerima izin.','Menjadi pakaian terluar. Pakaian yang terkontaminasi harus didekontaminasi sebelum dilepas.','Tipe 5 = partikel debu kering. Tipe 6 = percikan dan semprotan cairan terbatas.']},
+ {k:'boots',care:'shoes',t:{en:'Safety boots',id:'Sepatu safety'},std:'ISO 20345:2011 (S3)',
+  en:['Safety boots (S3: oil-resistant, anti-static, toe cap, penetration-resistant sole) are part of the basic set.','If boots are impractical for a job, ask HSSE for permission or have it written in the permit / JHA.','Keep them clean – clean muddy soles promptly.','Replace or repair damaged boots, e.g. toe cap worn through the leather or no tread left.','Chemical safety boots (nitrile, covering the ankle) are for tasks like chemical dosing.'],
+  id:['Sepatu safety (S3: tahan oli, antistatik, pelindung ujung, sol tahan tembus) termasuk perlengkapan dasar.','Jika sepatu tidak praktis untuk suatu pekerjaan, minta izin HSSE atau tuliskan dalam izin kerja / JHA.','Jaga tetap bersih – segera bersihkan sol berlumpur.','Ganti atau perbaiki sepatu rusak, mis. pelindung ujung menembus kulit atau tapak habis.','Sepatu safety kimia (nitril, menutup mata kaki) untuk tugas seperti dosis bahan kimia.']},
+ {k:'eyes',care:'glasses',t:{en:'Eye & face protection',id:'Pelindung mata & wajah'},std:'ANSI Z87.1 · ISO 16321-1',
+  en:['Safety glasses are part of the basic set: impact-resistant lenses, side shields, UV protection, anti-fog.','Goggles for corrosive or sprayed liquids. A face shield is worn together with glasses or goggles, never instead of them.','If you wear prescription glasses use over-glasses (fit-overs) or prescription safety glasses.','Welding work needs a welding visor or welding helmet with the right shade.'],
+  id:['Kacamata safety termasuk perlengkapan dasar: lensa tahan benturan, pelindung samping, proteksi UV, anti-embun.','Goggles untuk cairan korosif atau yang disemprotkan. Face shield dipakai bersama kacamata atau goggles, bukan sebagai pengganti.','Jika memakai kacamata resep, gunakan over-glasses (fit-over) atau kacamata safety resep.','Pekerjaan las memerlukan visor las atau helm las dengan tingkat gelap yang tepat.']},
+ {k:'hearing',care:'hearing',t:{en:'Hearing protection',id:'Pelindung pendengaran'},std:'NRR',
+  en:['Hearing protection is required wherever a sign says so, or noise exceeds 85 dB(A) over 8 hours (and never above 115 dB(A) at any time).','Minimum rating: NRR 25 for ear plugs, 29 for ear muffs. A higher NRR protects more.','Fit them snugly with clean hands, free of dirt or grease.','People working in high-noise areas have an annual hearing test.'],
+  id:['Pelindung pendengaran wajib di mana ada rambu, atau bila kebisingan melebihi 85 dB(A) selama 8 jam (dan tidak boleh melebihi 115 dB(A) kapan pun).','Peringkat minimum: NRR 25 untuk ear plug, 29 untuk ear muff. NRR lebih tinggi melindungi lebih baik.','Pasang dengan rapat menggunakan tangan bersih, bebas kotoran atau gemuk.','Pekerja di area bising tinggi menjalani tes pendengaran tahunan.']},
+ {k:'gloves',care:'gloves',t:{en:'Gloves',id:'Sarung tangan'},std:'EN 388 · EN 374 · EN 60903',
+  en:['One glove does not suit every job. Choose from the Glove Matrix: nitrile (EN 374), PU-coated and leather (EN 388), impact resistant, welders gauntlet, Sol-vex rubber gauntlet for chemicals, electricians Class 2 (EN 60903).','For chemicals, check the chemical’s Safety Data Sheet for the right glove material.','Never wear gloves around rotating equipment (e.g. milling machines).','Everyone entering the process area carries gloves that are easy to reach.'],
+  id:['Satu jenis sarung tangan tidak cocok untuk semua pekerjaan. Pilih dari Matriks Sarung Tangan: nitril (EN 374), berlapis PU dan kulit (EN 388), tahan benturan, gauntlet las, gauntlet karet Sol-vex untuk bahan kimia, elektrisi Kelas 2 (EN 60903).','Untuk bahan kimia, periksa Lembar Data Keselamatan (SDS) untuk bahan sarung tangan yang tepat.','Jangan pernah memakai sarung tangan di dekat peralatan berputar (mis. mesin milling).','Setiap orang yang masuk area proses membawa sarung tangan yang mudah dijangkau.']},
+ {k:'harness',care:'harness',t:{en:'Full body harness (loaned)',id:'Full body harness (pinjaman)'},std:'ISO 10333-1 · ANSI/ASSP Z359',
+  en:['LOANED: the full body harness stays store property. Request it, use it for the job, then return it.','Every harness comes with a suspension trauma strap. It must fit you and adjust properly.','Free fall must never exceed 1.8 m (6 ft) and you must not reach a lower level. Use the buddy system – working alone at height is strictly prohibited.','Fall clearance check: lanyard length + deceleration distance (3.5 ft) + height of the harness D-ring from your feet (6 ft) + 2 ft safety factor. With a 6 ft lanyard that is about 17.5 ft (5.3 m) below the anchor.','Anchor points must hold at least 2,267 kg (5,000 lb) per person and be chosen by a competent person. Guardrails, handrails and piping are NOT anchor points.','No knots in lanyards or lifelines; avoid sharp edges. Only locking snap hooks; never connect a snap hook to another snap hook.','After a fall or full load the equipment is taken out of service until a PPE Verifier (competent person) has inspected it. Self-retracting lanyards that took a fall are discarded.','Use fall protection only to protect people – never for any other purpose.'],
+  id:['PINJAMAN: full body harness tetap milik gudang. Ajukan permintaan, pakai untuk pekerjaan, lalu kembalikan.','Setiap harness dilengkapi tali suspension trauma. Harus pas dan dapat disesuaikan dengan baik.','Jatuh bebas tidak boleh melebihi 1,8 m (6 ft) dan Anda tidak boleh mencapai level di bawahnya. Gunakan sistem buddy – bekerja sendirian di ketinggian dilarang keras.','Cek jarak bebas jatuh: panjang lanyard + jarak perlambatan (3,5 ft) + tinggi D-ring harness dari kaki (6 ft) + faktor keamanan 2 ft. Dengan lanyard 6 ft jaraknya sekitar 17,5 ft (5,3 m) di bawah titik angkur.','Titik angkur harus menahan minimal 2.267 kg (5.000 lb) per orang dan dipilih oleh orang kompeten. Pagar pengaman, handrail dan pipa BUKAN titik angkur.','Tidak boleh ada simpul pada lanyard atau lifeline; hindari tepi tajam. Hanya snap hook terkunci; jangan sambungkan snap hook ke snap hook lain.','Setelah jatuh atau menahan beban penuh, peralatan dikeluarkan dari pemakaian sampai diperiksa oleh PPE Verifier (orang kompeten). Self-retracting lanyard yang menahan jatuh dibuang.','Gunakan perlindungan jatuh hanya untuk melindungi orang – tidak untuk keperluan lain.']},
+ {k:'resp',care:'resp',t:{en:'Respiratory protection',id:'Pelindung pernapasan'},std:'',
+  en:['The type is set by the site risk assessment or the chemical’s safety data sheet: N95 dust mask, half-face with organic-vapour cartridge, full-face with P3 filter, or SCBA.','Tight-fitting respirators need medical fitness and a fit test (at least every 2 years, or after weight, dental or facial changes). Use the same make, model and size you were tested on.','You must be clean-shaven where the mask seals. No jewellery or make-up on the seal area; pull hair away.','Breathing apparatus (SCBA) requires training by a competent provider for that brand. SCBA is not requested through this app.'],
+  id:['Jenisnya ditentukan oleh penilaian risiko lokasi atau lembar data keselamatan bahan kimia: masker debu N95, setengah-wajah dengan kartrid uap organik, full-face dengan filter P3, atau SCBA.','Respirator ketat memerlukan kelayakan medis dan uji kecocokan (minimal tiap 2 tahun, atau setelah perubahan berat badan, gigi atau wajah). Gunakan merek, model dan ukuran yang sama dengan saat diuji.','Wajib bersih cukur di area penyegelan masker. Tanpa perhiasan atau make-up di area segel; rambut disingkirkan.','Alat bantu pernapasan (SCBA) memerlukan pelatihan dari penyedia kompeten untuk merek tersebut. SCBA tidak diminta melalui aplikasi ini.']}
+];
+const TR_QUIZ = [
+ {q:{en:'Which PPE must everyone wear when entering a process area?',id:'APD apa yang wajib dipakai semua orang saat masuk area proses?'},a:0,
+  o:{en:['Helmet, safety glasses, safety boots, FR coverall','Helmet and safety boots only','Safety glasses and gloves only','Any clothing is fine if you wear boots'],id:['Helm, kacamata safety, sepatu safety, coverall FR','Hanya helm dan sepatu safety','Hanya kacamata safety dan sarung tangan','Pakaian apa saja boleh asal memakai sepatu']},
+  e:{en:'This is the minimum PPE for the process area. Gloves and ear plugs must be with you and used when required.',id:'Ini APD minimum untuk area proses. Sarung tangan dan ear plug harus dibawa dan dipakai bila diperlukan.'}},
+ {q:{en:'Which of these needs NO approval when you request it?',id:'Mana yang TIDAK perlu persetujuan saat diminta?'},a:2,
+  o:{en:['FR coverall','Safety boots','Safety glasses','Full body harness'],id:['Coverall FR','Sepatu safety','Kacamata safety','Full body harness']},
+  e:{en:'Ear plugs, safety glasses, gloves and rubber gloves are self-service: recorded at once, pass code by email. Everything else needs approval.',id:'Ear plug, kacamata safety, sarung tangan dan sarung tangan karet adalah layanan mandiri: langsung tercatat, kode pass lewat email. Lainnya perlu persetujuan.'}},
+ {q:{en:'How do you receive your collection code?',id:'Bagaimana Anda menerima kode pengambilan?'},a:1,
+  o:{en:['By SMS','By email','Verbally from your supervisor','It is printed on the QR poster'],id:['Lewat SMS','Lewat email','Lisan dari supervisor','Tercetak di poster QR']},
+  e:{en:'Codes are only sent by email (to your sponsor if you have no email). Never share your code.',id:'Kode hanya dikirim lewat email (ke sponsor jika Anda belum punya email). Jangan bagikan kode Anda.'}},
+ {q:{en:'When must the helmet chin strap be worn?',id:'Kapan tali dagu helm harus dipakai?'},a:2,
+  o:{en:['Only when working at height','Only near rotating equipment','At all times on site','Only when it rains'],id:['Hanya saat bekerja di ketinggian','Hanya di dekat peralatan berputar','Setiap saat di lokasi','Hanya saat hujan']},
+  e:{en:'The chin strap must be ready when you enter site and worn at ALL times.',id:'Tali dagu harus siap saat masuk lokasi dan dipakai SETIAP SAAT.'}},
+ {q:{en:'A helmet must be replaced when…',id:'Helm harus diganti ketika…'},a:1,
+  o:{en:['It is dirty','It was impacted or dropped, the cradle is damaged, or it is 5 years from manufacture (polycarbonate)','It is more than 1 year old','You change department'],id:['Kotor','Pernah terbentur atau jatuh, dudukan kepala rusak, atau 5 tahun sejak produksi (polikarbonat)','Usianya lebih dari 1 tahun','Anda pindah departemen']},
+  e:{en:'Check the date stamped inside the helmet. Suspensions and liners follow the maker’s recommendation.',id:'Periksa tanggal yang tercetak di dalam helm. Suspensi dan liner mengikuti rekomendasi pabrik.'}},
+ {q:{en:'Which inner clothing should you NOT wear under an FR coverall?',id:'Pakaian dalam apa yang TIDAK boleh dipakai di bawah coverall FR?'},a:1,
+  o:{en:['Cotton T-shirt','Polyester, nylon or acetate (e.g. Dri-Fit)','Long cotton trousers','Cotton underwear'],id:['Kaos katun','Poliester, nilon atau asetat (mis. Dri-Fit)','Celana panjang katun','Pakaian dalam katun']},
+  e:{en:'These synthetics melt under high heat and cause skin burns even under FR.',id:'Bahan sintetis ini meleleh pada panas tinggi dan menyebabkan luka bakar meski memakai FR.'}},
+ {q:{en:'Gloves must never be worn…',id:'Sarung tangan tidak boleh dipakai…'},a:1,
+  o:{en:['When handling chemicals','Around rotating equipment','In the process area','When it is cold'],id:['Saat menangani bahan kimia','Di dekat peralatan berputar','Di area proses','Saat dingin']},
+  e:{en:'A glove can be pulled into rotating equipment such as milling machines.',id:'Sarung tangan bisa tertarik ke peralatan berputar seperti mesin milling.'}},
+ {q:{en:'What is the maximum free fall distance when using fall protection?',id:'Berapa jarak jatuh bebas maksimum saat memakai perlindungan jatuh?'},a:0,
+  o:{en:['1.8 m (6 ft)','5 m','3 m','No limit if you wear a harness'],id:['1,8 m (6 ft)','5 m','3 m','Tanpa batas jika memakai harness']},
+  e:{en:'Free fall must never exceed 1.8 m (6 ft) and you must not reach a lower level. Working alone at height is strictly prohibited – use the buddy system.',id:'Jatuh bebas tidak boleh melebihi 1,8 m (6 ft) dan tidak boleh mencapai level di bawahnya. Bekerja sendirian di ketinggian dilarang keras – gunakan sistem buddy.'}},
+ {q:{en:'A harness has just stopped a fall. What now?',id:'Harness baru saja menahan jatuh. Apa yang dilakukan?'},a:1,
+  o:{en:['Wipe it and use it again','Stop using it – it stays out of service until a competent person has inspected it','Use it only for light work','Give it to a colleague'],id:['Lap lalu pakai lagi','Hentikan pemakaian – tidak boleh dipakai sampai diperiksa orang kompeten','Pakai hanya untuk pekerjaan ringan','Berikan ke rekan kerja']},
+  e:{en:'Equipment that took a fall or full load is removed from service until a PPE Verifier (competent person) has inspected it.',id:'Peralatan yang menahan jatuh atau beban penuh dikeluarkan dari pemakaian sampai diperiksa PPE Verifier (orang kompeten).'}},
+ {q:{en:'The full body harness you collect from the store is…',id:'Full body harness yang Anda ambil dari gudang adalah…'},a:1,
+  o:{en:['Yours to keep','Loaned – you return it to the store after the job','A disposable item','Shared by the team without recording'],id:['Milik Anda sepenuhnya','Pinjaman – Anda kembalikan ke gudang setelah pekerjaan','Barang sekali pakai','Dipakai bersama tim tanpa pencatatan']},
+  e:{en:'It stays store property. The store records the return and its condition, and you are reminded if it is overdue.',id:'Tetap milik gudang. Gudang mencatat pengembalian dan kondisinya, dan Anda diingatkan jika terlambat.'}}
+];
+function trainView(){
+  const sec = TR_SEC.map((s,i)=>{
+    let body='';
+    if(s.matrix) body = `<div class="small" style="margin-bottom:6px">${t('trMatrixNote')}</div><table><tr><th>${t('trTask')}</th><th>${t('trExtra')}</th></tr>${TR_TASKS.map(r=>`<tr><td>${esc(L==='id'?r[1]:r[0])}</td><td>${esc(r[2])}</td></tr>`).join('')}</table>`;
+    else if(s.ppe) body = TR_PPE.map(p=>{ const c = p.care && CARE[p.care]; return `<div style="border-top:1px solid var(--l);padding:10px 0"><b>${esc(p.t[L])}</b>${p.std?` <span class="small">· ${t('trStd')}: ${esc(p.std)}</span>`:''}<ul style="margin:6px 0;padding-left:18px;font-size:14px">${p[L].map(x=>`<li style="margin-bottom:4px">${esc(x)}</li>`).join('')}</ul>${c?`<details><summary class="small" style="cursor:pointer;color:var(--g)">${t('trCare')}</summary><div class="small" style="background:var(--g2);border-radius:8px;padding:8px 10px;margin-top:4px">${careBlock(p.care)}</div></details>`:''}</div>`; }).join('');
+    else body = `<${s.ol?'ol':'ul'} style="margin:0;padding-left:20px;font-size:14px">${s[L].map(x=>`<li style="margin-bottom:6px">${esc(x)}</li>`).join('')}</${s.ol?'ol':'ul'}>`;
+    return `<details class="card" ${i===0?'open':''}><summary style="cursor:pointer"><b>${esc(s.t[L])}</b></summary><div style="margin-top:8px">${body}</div></details>`;
+  }).join('');
+  const quiz = TR_QUIZ.map((q,i)=>`<div class="rec"><b>${i+1}. ${esc(q.q[L])}</b>${q.o[L].map((o,k)=>`<label style="display:flex;gap:8px;align-items:flex-start;color:#1a1a1a;margin:6px 0"><input type="radio" name="q${i}" value="${k}" style="width:auto;margin-top:4px"> <span>${esc(o)}</span></label>`).join('')}<div id="qe${i}" class="small"></div></div>`).join('');
+  $('pane').innerHTML = `<div class="card"><b>${t('trTitle')}</b><p class="small">${t('trIntro')}</p><div class="small">${t('trSrc')}</div><button class="s noprint" style="margin-top:8px" onclick="document.querySelectorAll('#pane details').forEach(d=>d.open=true);window.print()">${t('trPrint')}</button></div>${sec}
+  <div class="card"><b>${t('trQuiz')}</b>${quiz}<button class="p" onclick="gradeQuiz()">${t('trCheck')}</button><div id="qres"></div></div><div id="trrec"></div>`;
+}
+let TQ = {score:0,total:TR_QUIZ.length};
+function gradeQuiz(){
+  let sc=0, all=true;
+  TR_QUIZ.forEach((q,i)=>{ const v=document.querySelector(`input[name=q${i}]:checked`); if(!v) all=false; });
+  if(!all) return $('qres').innerHTML = `<div class="err">${t('trAll')}</div>`;
+  TR_QUIZ.forEach((q,i)=>{ const v=Number(document.querySelector(`input[name=q${i}]:checked`).value), ok=v===q.a; if(ok) sc++; $('qe'+i).innerHTML = `<span style="color:${ok?'#027a48':'#b42318'}"><b>${t(ok?'trRight':'trWrong')}.</b></span> ${esc(q.e[L])}`; });
+  TQ = {score:sc,total:TR_QUIZ.length};
+  const pass = sc/TR_QUIZ.length >= 0.8;
+  $('qres').innerHTML = `<div class="${pass?'ok':'err'}">${t('trScore')}: <b>${sc}/${TR_QUIZ.length}</b> – ${pass?t('trPass'):t('trRetry')}</div>`;
+  if(pass) recForm(); else $('trrec').innerHTML='';
+}
+function recForm(){
+  const cos = [...new Set(people.map(p=>p.Company))].sort();
+  $('trrec').innerHTML = `<div class="card"><b>${t('trRecord')}</b><div id="treg"><label>${t('company')}</label><select id="tco" onchange="tNames()"><option value="">${t('select')}</option>${cos.map(c=>`<option>${esc(c)}</option>`).join('')}</select><label>${t('name')}</label><select id="tper"><option value="">${t('select')}</option></select></div>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tnl" style="width:auto" onchange="$('tman').classList.toggle('hide',!this.checked);$('treg').classList.toggle('hide',this.checked)"> ${t('notListed')}</label>
+  <div id="tman" class="hide"><label>${t('name')}</label><input id="tmn"><label>${t('company')}</label><input id="tmc"></div>
+  <button class="p" onclick="saveTrain()">${t('trRecord')}</button><div id="tmsg"></div></div>`;
+  $('trrec').scrollIntoView({behavior:'smooth'});
+}
+function tNames(){ const c=$('tco').value; $('tper').innerHTML = `<option value="">${t('select')}</option>` + people.filter(p=>p.Company===c).sort((a,b)=>a.Name.localeCompare(b.Name)).map(p=>`<option value="${esc(p.PersonID)}">${esc(p.Name)}</option>`).join(''); }
+async function saveTrain(){
+  const body = {action:'trainDone',score:TQ.score,total:TQ.total};
+  if($('tnl').checked){ body.name=$('tmn').value.trim(); body.company=$('tmc').value.trim(); } else { body.personId=$('tper').value; if(!body.personId) return $('tmsg').innerHTML = '<div class="err">'+esc(t('name'))+'?</div>'; }
+  const r = await api(body); if(!r.ok) return $('tmsg').innerHTML = '<div class="err">'+E(r)+'</div>';
+  $('trrec').innerHTML = `<div class="card"><div class="ok">${t('trRecorded')}</div><button class="p" onclick="eTab='new';empInit().then(addKit)">${t('trKit')}</button></div>`;
+}
+
+/* ================= STAFF ================= */
+const PRE = (qs.get('code')||'').replace(/\D/g,'').slice(0,6);
+if(qs.get('code')){ try{ history.replaceState(null,'',location.pathname+'?mode=staff&req='+encodeURIComponent(qs.get('req')||'')); }catch(e){} }
+let S = {loanNames:[],pin:sessionStorage.getItem('ppe_pin')||'',role:sessionStorage.getItem('ppe_role')||'',name:sessionStorage.getItem('ppe_name')||'',tab:'',q:[],recs:[],filt:'All',hl:qs.get('req')||''};
+function staffInit(){ if(!S.pin) return staffLogin(); staffShell(); }
+function staffLogin(){
+  $('app').innerHTML = `<div class="card"><label>${t('pin')}</label><input id="pinI" type="password" inputmode="numeric" autocomplete="current-password"><button class="p" onclick="doLogin()">${t('login')}</button><div id="msg"></div></div>`;
+}
+async function doLogin(){
+  const p = $('pinI').value, r = await api({action:'login',pin:p});
+  if(!r.ok) return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>';
+  S.pin=p; S.role=r.role; S.name=r.name; sessionStorage.setItem('ppe_pin',p); sessionStorage.setItem('ppe_role',r.role); sessionStorage.setItem('ppe_name',r.name); S.tab=''; staffShell();
+}
+function logout(){ ['ppe_pin','ppe_role','ppe_name'].forEach(k=>sessionStorage.removeItem(k)); S.pin=''; staffLogin(); }
+function bad(r){ if(r.error==='BAD_PIN'){ logout(); return true; } return false; }
+async function staffShell(){
+  const A = S.role==='approver';
+  const tabs = A ? [['pending','pending'],['collect','collect'],['visitors','visitors'],['records','records'],['stock','stock'],['reports','reports'],['training','trainStaff'],['qr','qr']] : [['collect','collect'],['visitors','visitors'],['stock','stock'],['records','records'],['training','trainStaff']];
+  if(!S.tab) S.tab = S.hl ? ((A && !PRE) ? 'pending' : 'collect') : tabs[0][0];
+  $('app').innerHTML = `<div class="small" style="margin-bottom:6px">${esc(S.name)} · ${esc(S.role)}</div><div class="tabs">${tabs.map(([k,l])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';staffShell()">${t(l)}</button>`).join('')}<button onclick="logout()">${t('logout')}</button></div><div id="pane"></div>`;
+  ({pending:vQueue,collect:vQueue,visitors:vVisitors,records:vRecords,stock:vStock,reports:vReports,qr:vQR,training:vTraining})[S.tab]();
+}
+async function loadQ(){ const r = await api({action:'queue',pin:S.pin}); if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return null; } S.loanNames = r.loanItems||[]; return r.queue; }
+async function vQueue(){
+  $('pane').innerHTML = '…'; const q = await loadQ(); if(!q) return;
+  const want = S.tab==='pending' ? 'Requested' : 'Approved'; const list = q.filter(x=>x.Status===want);
+  $('pane').innerHTML = list.length ? list.map(card).join('') : `<div class="card small">${t('none')}</div>`;
+  if(S.hl){ const el = $('c_'+S.hl); if(el){ el.classList.add('hl'); el.scrollIntoView({block:'center'}); } }
+}
+function card(x){
+  const A = S.role==='approver', its = JSON.parse(x.ApprovedItems || x.Items);
+  let h = `<div class="card" id="c_${esc(x.ReqID)}"><b>${esc(x.Name)}</b> <span class="small">· ${esc(x.Company)}</span> <span class="pill ${x.Status}">${esc(x.Status)}</span><br><span class="small">${esc(x.ReqID)} · ${fmt(x.CreatedAt)} · ${esc(x.Reason)}</span>${flagsHtml(x.Flags)}`;
+  if(x.Status==='Requested'){
+    h += `<div class="items" id="it_${esc(x.ReqID)}">${its.map((i,k)=>`<div style="display:flex;gap:8px;align-items:center;margin:3px 0" data-item="${esc(i.item)}" data-size="${esc(i.size)}"><span style="flex:1">${esc(i.item)}${i.size?' ('+esc(i.size)+')':''}</span><input type="number" min="0" max="20" value="${i.qty}" style="width:70px"></div>`).join('')}</div>`;
+    if(x.Remark) h += `<div class="small">“${esc(x.Remark)}”</div>`;
+    h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="s" style="flex:1" onclick="hist('${esc(x.PersonID)}','${esc(x.ReqID)}')">${t('history')}</button></div><div id="x_${esc(x.ReqID)}"></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="p" style="margin:0" onclick="approve('${esc(x.ReqID)}')">${t('approve')}</button><button class="d" style="flex:0 0 35%" onclick="rejectReq('${esc(x.ReqID)}')">${t('reject')}</button></div><div id="m_${esc(x.ReqID)}"></div>`;
+  } else {
+    h += `<div class="items">${esc(itemsTxt(its))}</div><div class="small">${t('by')}: ${esc(x.ApprovedBy)} · ${fmt(x.ApprovedAt)} · ${t('expires')}: ${fmt(x.OtpExpires)}</div>
+    ${x.Sponsor?`<label style="display:flex;gap:8px;align-items:center;color:#b42318"><input type="checkbox" id="k_${esc(x.ReqID)}" style="width:auto"> ${t('idOk')} (${t('sponsorL')}: ${esc(x.Sponsor)})</label>`:''}${String(x.Reason).startsWith('Replacement')&&its.some(i=>needsRet(i.item))?`<div class="small" style="background:#fef0c7;border-radius:8px;padding:8px;margin-top:8px"><b>${t('oldRet')}</b> ${t('repNote')}<select id="ro_${esc(x.ReqID)}" style="margin-top:6px"><option value="">${t('select')}</option><option value="Yes">${t('oldYes')}</option><option value="No">${t('oldNo')}</option></select><input id="rn_${esc(x.ReqID)}" placeholder="${t('oldNote')}" style="margin-top:6px"></div>`:''}
+    ${its.some(i=>S.loanNames.includes(i.item))?`<div class="flag" style="margin-top:8px"><b>${t('loanBanner')}</b></div>`:''}${[...new Set(its.map(i=>i.item))].map(careDetails).join('')}<label>${t('otp')}</label><input id="o_${esc(x.ReqID)}" inputmode="numeric" maxlength="6" placeholder="••••••" class="otp" value="${S.hl===x.ReqID?esc(PRE):''}">
+    <button class="p" id="b_${esc(x.ReqID)}" onclick="issue('${esc(x.ReqID)}')">${t('issue')}</button><div id="m_${esc(x.ReqID)}"></div>
+    ${S.role==='approver'?`<button class="d" style="margin-top:8px" onclick="voidReq('${esc(x.ReqID)}')">${t('void')}</button>`:''}`;
+  }
+  return h + '</div>';
+}
+async function approve(id){
+  const items = [...document.querySelectorAll('#it_'+id+' [data-item]')].map(d=>({item:d.dataset.item,size:d.dataset.size,qty:d.querySelector('input').value})).filter(i=>Number(i.qty)>0);
+  const r = await api({action:'approve',pin:S.pin,id,items});
+  if(!r.ok) return $('m_'+id).innerHTML = '<div class="err">'+E(r)+'</div>';
+  S.hl=''; vQueue();
+}
+async function rejectReq(id){ const reason = prompt(t('rejWhy')); if(!reason) return; const r = await api({action:'reject',pin:S.pin,id,reason}); if(!r.ok) return alert(err(r.error)); S.hl=''; vQueue(); }
+async function voidReq(id){ const reason = prompt(t('voidWhy')); if(!reason) return; const r = await api({action:'void',pin:S.pin,id,reason}); if(!r.ok) return alert(err(r.error)); vQueue(); }
+async function hist(pid,id){ const r = await api({action:'history',pin:S.pin,personId:pid}); $('x_'+id).innerHTML = r.ok ? '<div class="small" style="margin-top:6px">'+(r.records.map(x=>esc(x.Status)+' · '+esc(itemsTxt(x.Items))+' · '+fmt(x.IssuedAt||x.CreatedAt)).join('<br>')||t('none'))+'</div>' : ''; }
+async function issue(id){
+  const otp = $('o_'+id).value.trim(); if(!/^\d{6}$/.test(otp)) return $('m_'+id).innerHTML = '<div class="err">'+t('otp')+'</div>';
+  $('b_'+id).disabled = true;
+  const r = await api({action:'issue',pin:S.pin,id,otp,idChecked:!!($('k_'+id)&&$('k_'+id).checked),oldReturned:$('ro_'+id)?$('ro_'+id).value:'',oldNote:$('rn_'+id)?$('rn_'+id).value:''});
+  if(!r.ok){ $('b_'+id).disabled=false; return $('m_'+id).innerHTML = '<div class="err">'+E(r)+'</div>'; }
+  $('c_'+id).innerHTML = `<div class="ok">${t('issued')}: <b>${esc(r.receipt)}</b><br>${fmt(r.at)}</div>`;
+}
+
+async function vRecords(){
+  $('pane').innerHTML = '…'; const r = await api({action:'records',pin:S.pin});
+  if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return; } S.recs = r.records; drawRecs();
+}
+function drawRecs(){
+  const q = ($('q')?$('q').value:'').toLowerCase(), cnt = s => S.recs.filter(x=>x.Status===s).length;
+  const list = S.recs.filter(x=>(S.filt==='All'||x.Status===S.filt)&&(!q||(x.Name+x.ReqID+x.Company).toLowerCase().includes(q)));
+  $('pane').innerHTML = `<div class="sum">${['Requested','Approved','Issued','Rejected','Expired'].map(s=>`<div><b>${cnt(s)}</b>${s}</div>`).join('')}</div>
+  <div class="card"><div style="display:flex;gap:6px"><select onchange="S.filt=this.value;drawRecs()" style="flex:1">${['All','Requested','Approved','Issued','Rejected','Expired','Cancelled','Voided'].map(s=>`<option ${s===S.filt?'selected':''} value="${s}">${s==='All'?t('all'):s}</option>`).join('')}</select><button class="s" onclick="csv()">${t('csv')}</button></div>
+  <input id="q" placeholder="${t('search')}" value="${esc(q)}" style="margin-top:8px" oninput="drawRecs();const e=$('q');e.focus();e.setSelectionRange(e.value.length,e.value.length)">
+  ${list.map(x=>`<div class="rec"><b>${esc(x.Name)}</b> <span class="pill ${x.Status}">${esc(x.Status)}</span><br><span class="small">${esc(x.ReqID)} · ${esc(x.Company)} · ${fmt(x.CreatedAt)}</span><br>${esc(itemsTxt(x.ApprovedItems||x.Items))}
+  <br><span class="small">${x.ApprovedBy?t('by')+': '+esc(x.ApprovedBy)+' · ':''}${x.IssuedBy?esc(x.IssuedBy)+' · '+fmt(x.IssuedAt)+' · '+esc(x.ReceiptCode):''} ${esc(x.Note||'')}</span></div>`).join('')||`<p class="small">${t('none')}</p>`}</div>`;
+}
+function csv(){
+  const h=['ReqID','CreatedAt','Name','Company','Items','Reason','Status','ApprovedBy','ApprovedAt','IssuedBy','IssuedAt','ReceiptCode','Note'], q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=[h.join(',')].concat(S.recs.map(r=>h.map(k=>q(k==='Items'?itemsTxt(r.ApprovedItems||r.Items):r[k])).join(',')));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})); a.download='PPE-records.csv'; a.click();
+}
+
+async function vStock(){
+  $('pane').innerHTML='…'; const r = await api({action:'stock',pin:S.pin});
+  if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return; }
+  const A = S.role==='approver';
+  $('pane').innerHTML = stockViz(r) + `<div class="card"><table><tr><th>${t('itm')}</th><th>${t('size')}</th><th>${t('onhand')}</th><th>${t('min')}</th></tr>${r.stock.map(s=>`<tr class="${Number(s.MinLevel)&&Number(s.OnHand)<=Number(s.MinLevel)?'low':''}"><td>${esc(s.Item)}</td><td>${esc(s.Size)}</td><td>${esc(s.OnHand)}${/\(Laundry\)$/.test(s.Size)&&Number(s.OnHand)>0?` <button class="s" onclick="washDone('${esc(s.Item)}','${esc(s.Size)}')">${t('washDone')}</button>`:''}</td><td>${esc(s.MinLevel)}</td></tr>`).join('')}</table></div>
+  <div class="card"><b>${t('addStock')}</b><label>${t('itm')}</label><select id="si" onchange="stSizes()"><option value="">${t('select')}</option>${r.items.map(i=>`<option value="${esc(i.Item)}" data-s="${esc(i.Sizes)}">${esc(i.Item)}</option>`).join('')}</select>
+  <label>${t('size')}</label><select id="ss"><option value="">–</option></select><label>${t('qty')} ${A?'(− = correction)':''}</label><input id="sq" type="number" value="1">
+  ${A?`<label>${t('min')}</label><input id="sm" type="number" min="0" placeholder="0">`:''}<label>${t('refL')}</label><input id="sf"><label>${t('reasonTxt')}</label><input id="sr"><button class="p" onclick="addStock()">${t('save')}</button><div id="msg"></div></div>
+  <div class="card"><b>${t('logT')}</b>${r.log.map(l=>`<div class="rec small">${fmt(l.Timestamp)} · ${esc(l.Item)} ${esc(l.Size)} · <b>${l.Change>0?'+':''}${esc(l.Change)}</b> · ${esc(l.Reason)} ${esc(l.Ref)} · ${esc(l.Actor)}</div>`).join('')||`<span class="small">${t('none')}</span>`}</div>`;
+}
+function stockViz(r){
+  const g = {}, lau = {};
+  r.stock.forEach(s=>{ if(/\(Laundry\)$/.test(s.Size)){ lau[s.Item]=(lau[s.Item]||0)+Number(s.OnHand); return; } (g[s.Item]=g[s.Item]||{tot:0,min:0,rows:[]}); g[s.Item].tot+=Number(s.OnHand); g[s.Item].min+=Number(s.MinLevel||0); g[s.Item].rows.push(s); });
+  const st = (v,m)=> v<=0?'out':(m&&v<=m?'low':'ok'), col = {out:'#b42318',low:'#f79009',ok:'#0b5d3b'};
+  const names = Object.keys(g).sort(), max = Math.max(1,...names.map(n=>Math.max(g[n].tot,g[n].min)));
+  const untracked = r.items.filter(i=>!g[i.Item]).map(i=>i.Item);
+  const cards = names.map(n=>{ const x=g[n], s=st(x.tot,x.min); return `<div style="border:1px solid var(--l);border-radius:8px;padding:8px 10px;margin:6px 0;border-left:6px solid ${col[s]}">
+    <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(n)}</b><span><b style="font-size:18px">${x.tot}</b> <span class="pill" style="background:${col[s]}22;color:${col[s]}">${t(s==='ok'?'inStock':s==='low'?'lowS2':'outS')}</span></span></div>
+    <div class="small" style="margin-top:4px">${x.rows.filter(z=>z.Size).map(z=>{ const q=st(Number(z.OnHand),Number(z.MinLevel||0)); return `<span style="display:inline-block;margin:2px 6px 2px 0;color:${col[q]}">${esc(z.Size)}: <b>${esc(z.OnHand)}</b></span>`; }).join('')}${lau[n]?` · ${t('laundryL')}: ${lau[n]}`:''}</div></div>`; }).join('');
+  const bars = names.map(n=>{ const x=g[n], s=st(x.tot,x.min); return `<div class="bar"><span class="n">${esc(n)}</span><span style="flex:1;position:relative;height:16px;background:#eef0f2;border-radius:4px"><i style="width:${Math.max(1,x.tot/max*100)}%;background:${col[s]};height:16px"></i>${x.min?`<span style="position:absolute;top:-2px;bottom:-2px;left:${x.min/max*100}%;border-left:2px dashed #1a1a1a"></span>`:''}</span><b>${x.tot}</b></div>`; }).join('');
+  const tr = r.trend||[], tm = Math.max(1,...tr.map(d=>Math.max(d.out,d.inn))), W=300, H=90, bw=W/tr.length;
+  const svg = `<svg viewBox="0 0 ${W} ${H+14}" width="100%" role="img">${tr.map((d,i)=>`<rect x="${i*bw+1}" y="${H-d.out/tm*H}" width="${bw/2-1}" height="${d.out/tm*H}" fill="#0b5d3b"/><rect x="${i*bw+bw/2}" y="${H-d.inn/tm*H}" width="${bw/2-1}" height="${d.inn/tm*H}" fill="#175cd3"/>`).join('')}<line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="#999"/><text x="0" y="${H+11}" font-size="8" fill="#667085">${esc((tr[0]||{}).d||'')}</text><text x="${W}" y="${H+11}" font-size="8" fill="#667085" text-anchor="end">${esc((tr[tr.length-1]||{}).d||'')}</text></svg>`;
+  const dem = (r.demand||[]).map(d=>{ const row=r.stock.find(s=>s.Item===d.item&&String(s.Size)===String(d.size)), have=row?Number(row.OnHand):null, short=have==null?null:Math.max(0,d.qty-have); return `<div class="rec small"><b>${esc(d.item)}${d.size?' ('+esc(d.size)+')':''}</b> × ${d.qty}${short>0?` <span style="color:#b42318"><b>${t('shortL')} ${short}</b></span>`:(have!=null?` <span style="color:#027a48">${t('covered')}</span>`:'')}<br>${esc(d.names.join(', '))}</div>`; }).join('');
+  return `${dem?`<div class="card"><b>${t('demandT')}</b>${dem}</div>`:''}<div class="card"><b>${t('availT')}</b>${cards||`<div class="small">${t('none')}</div>`}${untracked.length?`<div class="small" style="margin-top:8px">${t('notTr')}: ${untracked.map(esc).join(', ')}</div>`:''}</div>
+  <div class="card"><b>${t('chartT')}</b><div class="small">▮ ${t('onhand')} · ┆ ${t('min')}</div>${bars}</div>
+  <div class="card"><b>${t('trendT')}</b><div class="small"><span style="color:#0b5d3b">■</span> ${t('issuedL')} · <span style="color:#175cd3">■</span> ${t('recvL')}</div>${svg}</div>`;
+}
+function stSizes(){ const s=($('si').selectedOptions[0].dataset.s||'').split(',').filter(Boolean); $('ss').innerHTML = s.length ? s.map(x=>`<option>${esc(x)}</option>`).join('') : '<option value="">–</option>'; }
+async function addStock(){
+  const r = await api({action:'stockAdd',pin:S.pin,item:$('si').value,size:$('ss').value,qty:$('sq').value,minLevel:$('sm')?$('sm').value:'',reason:$('sr').value,ref:$('sf').value});
+  if(!r.ok) return $('msg').innerHTML='<div class="err">'+E(r)+'</div>'; vStock();
+}
+
+async function vReports(){
+  $('pane').innerHTML='…'; const r = await api({action:'report',pin:S.pin});
+  if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return; }
+  const bars = o => { const e = Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,12), m = Math.max(1,...e.map(x=>x[1])); return e.map(([k,v])=>`<div class="bar"><span class="n">${esc(k)}</span><i style="width:${Math.max(3,v/m*45)}%"></i><b>${v}</b></div>`).join('')||`<span class="small">${t('none')}</span>`; };
+  $('pane').innerHTML = `<div class="sum"><div><b>${r.avgApproveHours??'–'}</b>${t('avgA')}</div><div><b>${r.avgCollectHours??'–'}</b>${t('avgC')}</div>${Object.entries(r.counts).map(([k,v])=>`<div><b>${v}</b>${esc(k)}</div>`).join('')}</div>
+  ${r.low.length?`<div class="card"><b>${t('lowS')}</b>${r.low.map(s=>`<span class="flag">${esc(s.Item)} ${esc(s.Size)}: ${esc(s.OnHand)} (min ${esc(s.MinLevel)})</span>`).join('')}</div>`:''}
+  <div class="card"><b>${t('byMonth')}</b>${bars(r.byMonth)}</div><div class="card"><b>${t('byItem')}</b>${bars(r.byItem)}</div><div class="card"><b>${t('byCo')}</b>${bars(r.byCompany)}</div>`;
+}
+
+function vQR(){
+  $('pane').innerHTML = `<div class="card" style="text-align:center"><h2 style="margin:4px 0">${t('scan')}</h2><div>${t('scanId')}</div><div id="qr" style="display:flex;justify-content:center;margin:16px"></div><div class="small">${esc(BASE)}</div><button class="p noprint" onclick="window.print()">${t('print')}</button></div>`;
+  if(window.QRCode) new QRCode($('qr'),{text:BASE,width:260,height:260});
+}
+async function vTraining(){
+  $('pane').innerHTML='…'; const r = await api({action:'training',pin:S.pin});
+  if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return; }
+  $('pane').innerHTML = `<div class="card"><b>${t('trTrained')} (${r.records.length})</b><table><tr><th>${t('trDate')}</th><th>${t('name')}</th><th>${t('company')}</th><th>${t('trScoreL')}</th></tr>${r.records.map(x=>`<tr><td>${fmt(x.Timestamp)}</td><td>${esc(x.Name)}</td><td>${esc(x.Company)}</td><td>${esc(x.Score)}/${esc(x.Total)}</td></tr>`).join('')||`<tr><td colspan="4" class="small">${t('none')}</td></tr>`}</table></div>`;
+}
+/* ===== Visitors / temporary loans ===== */
+let LI = {hosts:[],items:[]};
+async function washDone(item,size){ const q = prompt(t('washQty'),'1'); if(!q) return; const r = await api({action:'laundryDone',pin:S.pin,item,size,qty:q}); if(!r.ok) return alert(err(r.error)+' '+(r.detail||'')); vStock(); }
+async function vVisitors(){
+  $('pane').innerHTML='…';
+  const [a,b] = await Promise.all([api({action:'loanInfo',pin:S.pin}),api({action:'loans',pin:S.pin})]);
+  if(!a.ok){ if(!bad(a)) $('pane').innerHTML='<div class="err">'+E(a)+'</div>'; return; }
+  LI = a; const loans = b.ok ? b.loans : [];
+  const cos = [...new Set(LI.hosts.map(p=>p.Company))].sort(), today = new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'});
+  const out = loans.filter(l=>l.Status==='Out'), done = loans.filter(l=>l.Status!=='Out').slice(0,25);
+  $('pane').innerHTML = `<div class="card"><b>${t('lend')}</b><div class="small">${t('hostNote')}</div>
+  <label>${t('vNames')}</label><input id="vn"><label>${t('vCo')}</label><input id="vc">
+  <label>${t('host')}</label><select id="hc" onchange="hostNames()"><option value="">${t('company')}…</option>${cos.map(c=>`<option>${esc(c)}</option>`).join('')}</select><select id="hp" style="margin-top:6px"><option value="">${t('select')}</option></select>
+  <label>${t('items')}</label><div id="lrows"></div><button class="s" onclick="addLRow()">${t('add')}</button>
+  <label>${t('purpose')}</label><input id="vp"><button class="p" id="lg" onclick="lend()">${t('lend')}</button><div id="msg"></div></div>
+  <h3 style="margin:14px 0 6px">${t('outNow')} (${out.length})</h3>
+  ${out.map(l=>{ const its=JSON.parse(l.Items), emp=l.Type==='Employee', od = emp ? (l.Due && new Date(l.Due).toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'})<today) : new Date(l.CreatedAt).toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'})<today;
+   return `<div class="card" id="l_${esc(l.LoanID)}"><b>${esc(l.Visitors)}</b> <span class="small">· ${esc(l.VisitorCompany)}</span> ${emp?`<span class="pill Approved">${t('empLoan')}</span> `:''}${od?`<span class="pill Rejected">${t('overdue')}</span>`:''}<br><span class="small">${esc(l.LoanID)} · ${emp?t('dueL')+': '+fmt(l.Due):t('host')+': '+esc(l.HostName)} · ${fmt(l.CreatedAt)}</span>${/harness/i.test(l.Items)?`<div class="flag" style="margin-top:6px">${t('harnessNote')}</div>`:''}
+   ${its.map((i,k)=>`<div style="display:flex;gap:8px;align-items:center;margin:4px 0"><span style="flex:1">${esc(i.item)}${i.size?' ('+esc(i.size)+')':''} × ${i.qty}</span><input type="number" min="0" max="${i.qty}" value="${i.qty}" class="rq" style="width:70px"></div>`).join('')}
+   <label>${t('condL')}</label><select class="cd"><option value="Good">${t('c_Good')}</option><option value="Wash">${t('c_Wash')}</option><option value="Damaged">${t('c_Damaged')}</option></select>
+   <button class="p" onclick="retLoan('${esc(l.LoanID)}')">${t('retBtn')}</button><button class="d" style="width:100%;margin-top:8px" onclick="wOff('${esc(l.LoanID)}')">${t('writeOff')}</button><div class="m"></div></div>`; }).join('')||`<div class="card small">${t('none')}</div>`}
+  <h3 style="margin:14px 0 6px">${t('histL')}</h3>${done.map(l=>`<div class="rec small"><b>${esc(l.Visitors)}</b> · ${esc(itemsTxt(l.Items))} · ${esc(l.Status)} ${esc(l.Condition)} · ${esc(l.HostName)} · ${fmt(l.ReturnedAt||l.CreatedAt)}</div>`).join('')}`;
+  addLRow();
+}
+function hostNames(){ const c=$('hc').value; $('hp').innerHTML = `<option value="">${t('select')}</option>`+LI.hosts.filter(p=>p.Company===c).sort((a,b)=>a.Name.localeCompare(b.Name)).map(p=>`<option value="${esc(p.PersonID)}">${esc(p.Name)}</option>`).join(''); }
+function addLRow(){
+  const d=document.createElement('div'); d.className='row';
+  d.innerHTML=`<select class="it" onchange="sizes(this)"><option value="">${t('select')}</option>${LI.items.map(i=>`<option value="${esc(i.Item)}" data-s="${esc(i.Sizes)}">${esc(i.Item)}</option>`).join('')}</select><select class="sz"><option value="">${t('size')}</option></select><input class="qt" type="number" min="1" max="20" value="1"><button class="d" onclick="this.parentNode.remove()">×</button>`;
+  $('lrows').appendChild(d);
+}
+async function lend(){
+  const items=[...document.querySelectorAll('#lrows .row')].map(r=>({item:r.querySelector('.it').value,size:r.querySelector('.sz').value,qty:r.querySelector('.qt').value,need:r.querySelector('.sz').options.length>1})).filter(i=>i.item);
+  if(!items.length||items.some(i=>i.need&&!i.size)) return $('msg').innerHTML='<div class="err">'+esc(err('NO_ITEMS'))+'</div>';
+  if(!$('hp').value) return $('msg').innerHTML='<div class="err">'+esc(err('HOST_REQUIRED'))+'</div>';
+  $('lg').disabled=true;
+  const r=await api({action:'loanCreate',pin:S.pin,visitors:$('vn').value,company:$('vc').value,hostId:$('hp').value,purpose:$('vp').value,items:items.map(({item,size,qty})=>({item,size,qty}))});
+  if(!r.ok){ $('lg').disabled=false; return $('msg').innerHTML='<div class="err">'+E(r)+'</div>'; }
+  vVisitors();
+}
+async function retLoan(id){
+  const c=$('l_'+id), returned=[...c.querySelectorAll('.rq')].map(i=>i.value), condition=c.querySelector('.cd').value;
+  const r=await api({action:'loanReturn',pin:S.pin,id,returned,condition});
+  if(!r.ok) return c.querySelector('.m').innerHTML='<div class="err">'+E(r)+'</div>'; vVisitors();
+}
+async function wOff(id){ const reason=prompt(t('writeWhy')); if(!reason) return; const r=await api({action:'loanWriteOff',pin:S.pin,id,reason}); if(!r.ok) return alert(err(r.error)); vVisitors(); }
+render();
+</script>
+</body>
+</html>
