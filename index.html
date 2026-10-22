@@ -82,7 +82,7 @@ details>summary{min-height:32px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.14.1';
+const VERSION = 'v2.15.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -228,6 +228,12 @@ Object.assign(T.ms.ERR,{BAD_EMAIL:'Masukkan e-mel yang sah.',BAD_CODE:'Kod salah
 Object.assign(T.en.ERR,{BAD_DOMAIN:'Use your company email (@ecooils.com.my or @ecooils.co.id).'});
 Object.assign(T.id.ERR,{BAD_DOMAIN:'Gunakan email perusahaan Anda (@ecooils.com.my atau @ecooils.co.id).'});
 Object.assign(T.ms.ERR,{BAD_DOMAIN:'Gunakan e-mel syarikat anda (@ecooils.com.my atau @ecooils.co.id).'});
+Object.assign(T.en,{keepMe:'Keep me logged in (30 days)',doNo:'Delivery order (DO) number',doSup:'Supplier',doDate:'DO date',doFile:'Scan or photo of the signed DO',doFileHint:'JPG, PNG or PDF, up to about 5 MB. The file is kept and can be checked later. Stock cannot be added without it.',csvTpl:'Download CSV template',csvUp:'Or upload a CSV file (Item, Size, Qty)',doT:'Delivery orders',doView:'View DO',doOk:'File checked: unchanged since upload.',doBad:'WARNING: this file differs from the one uploaded.',doNone:'No delivery orders yet.'});
+Object.assign(T.id,{keepMe:'Biarkan saya tetap masuk (30 hari)',doNo:'Nomor surat jalan (DO)',doSup:'Pemasok',doDate:'Tanggal DO',doFile:'Scan atau foto DO yang ditandatangani',doFileHint:'JPG, PNG atau PDF, maksimal sekitar 5 MB. File disimpan dan dapat diperiksa kemudian. Stok tidak dapat ditambah tanpa file ini.',csvTpl:'Unduh templat CSV',csvUp:'Atau unggah file CSV (Item, Ukuran, Jumlah)',doT:'Surat jalan (DO)',doView:'Lihat DO',doOk:'File diperiksa: tidak berubah sejak diunggah.',doBad:'PERINGATAN: file ini berbeda dari yang diunggah.',doNone:'Belum ada surat jalan.'});
+Object.assign(T.ms,{keepMe:'Kekalkan saya log masuk (30 hari)',doNo:'Nombor order penghantaran (DO)',doSup:'Pembekal',doDate:'Tarikh DO',doFile:'Imbasan atau gambar DO yang ditandatangani',doFileHint:'JPG, PNG atau PDF, maksimum kira-kira 5 MB. Fail disimpan dan boleh disemak kemudian. Stok tidak boleh ditambah tanpa fail ini.',csvTpl:'Muat turun templat CSV',csvUp:'Atau muat naik fail CSV (Item, Saiz, Kuantiti)',doT:'Order penghantaran (DO)',doView:'Lihat DO',doOk:'Fail disemak: tidak berubah sejak dimuat naik.',doBad:'AMARAN: fail ini berbeza daripada yang dimuat naik.',doNone:'Belum ada order penghantaran.'});
+Object.assign(T.en.ERR,{DO_REQUIRED:'Enter the DO number and date.',DO_FILE_REQUIRED:'Attach the delivery order (JPG, PNG or PDF).',DO_FILE_BIG:'The file is too large (max about 5 MB).',DO_DUPLICATE:'This DO number was already uploaded for this supplier.',DO_FAILED:'The file could not be saved or opened. Try again.'});
+Object.assign(T.id.ERR,{DO_REQUIRED:'Isi nomor dan tanggal DO.',DO_FILE_REQUIRED:'Lampirkan surat jalan (JPG, PNG atau PDF).',DO_FILE_BIG:'File terlalu besar (maks sekitar 5 MB).',DO_DUPLICATE:'Nomor DO ini sudah diunggah untuk pemasok ini.',DO_FAILED:'File tidak dapat disimpan atau dibuka. Coba lagi.'});
+Object.assign(T.ms.ERR,{DO_REQUIRED:'Masukkan nombor dan tarikh DO.',DO_FILE_REQUIRED:'Lampirkan order penghantaran (JPG, PNG atau PDF).',DO_FILE_BIG:'Fail terlalu besar (maks kira-kira 5 MB).',DO_DUPLICATE:'Nombor DO ini sudah dimuat naik untuk pembekal ini.',DO_FAILED:'Fail tidak dapat disimpan atau dibuka. Cuba lagi.'});
 Object.assign(T.en,{selfEmailNote:'No email is on file for you yet. Type your company email (@ecooils.com.my or @ecooils.co.id): the code is sent there and you show your ID at the store. It is saved after a correct issue. No company email? Choose a sponsor below instead.',f_SELF_EMAIL:'Email typed by the person – saved to the register after issue'});
 Object.assign(T.id,{selfEmailNote:'Belum ada email untuk Anda. Ketik email perusahaan (@ecooils.com.my atau @ecooils.co.id): kode dikirim ke sana dan Anda menunjukkan ID di gudang. Email disimpan setelah penyerahan yang benar. Tidak punya email perusahaan? Pilih penaja di bawah.',f_SELF_EMAIL:'Email diketik sendiri – disimpan ke daftar setelah penyerahan'});
 Object.assign(T.ms,{selfEmailNote:'Belum ada e-mel untuk anda. Taip e-mel syarikat (@ecooils.com.my atau @ecooils.co.id): kod dihantar ke sana dan anda menunjukkan ID di stor. E-mel disimpan selepas pengeluaran yang betul. Tiada e-mel syarikat? Pilih penaja di bawah.',f_SELF_EMAIL:'E-mel ditaip sendiri – disimpan ke daftar selepas pengeluaran'});
@@ -520,25 +526,27 @@ async function saveTrain(){
 /* ================= STAFF ================= */
 const PRE = (qs.get('code')||'').replace(/\D/g,'').slice(0,6);
 if(qs.get('code')){ try{ history.replaceState(null,'',location.pathname+'?mode=staff&req='+encodeURIComponent(qs.get('req')||'')); }catch(e){} }
-let S = {loanNames:[],pin:sessionStorage.getItem('ppe_pin')||'',role:sessionStorage.getItem('ppe_role')||'',name:sessionStorage.getItem('ppe_name')||'',pool:sessionStorage.getItem('ppe_pool')||'All',pv:'All',tab:'',q:[],recs:[],filt:'All',hl:qs.get('req')||''};
+const KEEP = (()=>{ try{ return localStorage.getItem('ppe_keep')==='1'; }catch(e){ return false; } })(), STO = KEEP ? localStorage : sessionStorage;
+let S = {keep:KEEP,loanNames:[],pin:STO.getItem('ppe_pin')||'',role:STO.getItem('ppe_role')||'',name:STO.getItem('ppe_name')||'',pool:STO.getItem('ppe_pool')||'All',pv:'All',tab:'',q:[],recs:[],filt:'All',hl:qs.get('req')||''};
 function staffInit(){ if(!S.pin) return staffLogin(); staffShell(); }
 function staffLogin(note){
-  $('app').innerHTML = `<div class="card">${note?`<div class="small" style="margin-bottom:8px">${esc(note)}</div>`:''}<label>${t('emailStaff')}</label><input id="emI" type="email" inputmode="email" autocomplete="username" value="${esc(S.email||'')}"><button class="p" id="scB" onclick="sendCode()">${t('sendCode')}</button><div id="msg"></div></div>`;
+  $('app').innerHTML = `<div class="card">${note?`<div class="small" style="margin-bottom:8px">${esc(note)}</div>`:''}<label>${t('emailStaff')}</label><input id="emI" type="email" inputmode="email" autocomplete="username" value="${esc(S.email||'')}"><label style="display:flex;gap:10px;align-items:center;margin:12px 0"><input type="checkbox" id="kpI" style="width:auto"${S.keep?' checked':''}> ${t('keepMe')}</label><button class="p" id="scB" onclick="sendCode()">${t('sendCode')}</button><div id="msg"></div></div>`;
 }
 async function sendCode(){
-  const em = $('emI').value.trim(); S.email = em; $('scB').disabled = true;
+  const em = $('emI').value.trim(); S.email = em; S.keepWant = !!($('kpI')&&$('kpI').checked); $('scB').disabled = true;
   const r = await api({action:'loginStart',email:em});
   if(!r.ok){ $('scB').disabled=false; return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>'; }
   $('app').innerHTML = `<div class="card"><div class="small">${t('codeSentTo')} <b>${esc(em)}</b></div><label>${t('enterCode')}</label><input id="cdI" class="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"><button class="p" id="vB" onclick="doLogin()">${t('verify')}</button><button class="s" style="margin-top:8px" onclick="staffLogin()">${t('changeEmail')}</button><div id="msg"></div></div>`;
   $('cdI').focus();
 }
 async function doLogin(){
-  const r = await api({action:'loginVerify',email:S.email,code:$('cdI').value.trim()});
+  const r = await api({action:'loginVerify',email:S.email,code:$('cdI').value.trim(),keep:!!S.keepWant});
   if(!r.ok) return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>';
-  S.pin=r.token; S.role=r.role; S.name=r.name; S.pool=r.pool||'All'; sessionStorage.setItem('ppe_pool',S.pool); sessionStorage.setItem('ppe_pin',r.token); sessionStorage.setItem('ppe_role',r.role); sessionStorage.setItem('ppe_name',r.name); S.tab=''; staffShell();
+  S.pin=r.token; S.role=r.role; S.name=r.name; S.pool=r.pool||'All'; S.owner=!!r.owner; clearSess(); try{ localStorage.setItem('ppe_keep',S.keepWant?'1':'0'); }catch(e){} const ST=S.keepWant?localStorage:sessionStorage; try{ ST.setItem('ppe_pool',S.pool); ST.setItem('ppe_pin',r.token); ST.setItem('ppe_role',r.role); ST.setItem('ppe_name',r.name); }catch(e){} S.keep=S.keepWant; S.tab=''; staffShell();
 }
-function logout(){ ['ppe_pin','ppe_role','ppe_name','ppe_pool'].forEach(k=>sessionStorage.removeItem(k)); S.pin=''; staffLogin(); }
-function bad(r){ if(r.error==='SESSION_EXPIRED'||r.error==='BAD_PIN'){ ['ppe_pin','ppe_role','ppe_name','ppe_pool'].forEach(k=>sessionStorage.removeItem(k)); S.pin=''; staffLogin(t('sessionEnded')); return true; } return false; }
+function clearSess(){ ['ppe_pin','ppe_role','ppe_name','ppe_pool'].forEach(k=>{ try{ sessionStorage.removeItem(k); localStorage.removeItem(k); }catch(e){} }); }
+function logout(){ const p=S.pin; if(p) api({action:'logout',pin:p}); clearSess(); try{ localStorage.setItem('ppe_keep','0'); }catch(e){} S.keep=false; S.pin=''; staffLogin(); }
+function bad(r){ if(r.error==='SESSION_EXPIRED'||r.error==='BAD_PIN'){ clearSess(); S.pin=''; staffLogin(t('sessionEnded')); return true; } return false; }
 async function staffShell(){
   const A = S.role==='approver';
   const tabs = A ? [['pending','pending'],['collect','collect'],['visitors','visitors'],['records','records'],['stock','stock'],['reports','reports'],['training','trainStaff'],['admin','adminTab'],['qr','qr']] : [['collect','collect'],['visitors','visitors'],['stock','stock'],['records','records'],['training','trainStaff']];
@@ -609,7 +617,7 @@ function csv(){
 }
 
 async function vStock(){
-  $('pane').innerHTML='…'; const [r0,pd] = await Promise.all([api({action:'stock',pin:S.pin}),api({action:'poolDebts',pin:S.pin})]);
+  $('pane').innerHTML='…'; const [r0,pd,dv] = await Promise.all([api({action:'stock',pin:S.pin}),api({action:'poolDebts',pin:S.pin}),api({action:'deliveries',pin:S.pin})]); S.items=(r0.items||[]);
   if(!r0.ok){ if(!bad(r0)) $('pane').innerHTML='<div class="err">'+E(r0)+'</div>'; return; }
   const A = S.role==='approver', fixed = A && S.pool!=='All' ? S.pool : '';
   const pv = fixed || S.pv, r = Object.assign({},r0,{stock:r0.stock.filter(s=>pv==='All'||s.Pool===pv),demand:(r0.demand||[]).filter(d=>pv==='All'||d.pool===pv)});
@@ -617,19 +625,58 @@ async function vStock(){
   const open = pd.ok ? pd.debts.filter(d=>d.Status==='Open') : [];
   $('pane').innerHTML = (fixed?'':`<div class="card"><label style="margin:0">${t('poolL')}</label><div class="tabs" style="margin:6px 0 0">${['All','Project','Asset'].map(p=>`<button class="${pv===p?'on':''}" onclick="S.pv='${p}';vStock()">${esc(p==='All'?t('p_All'):pl(p))}</button>`).join('')}</div></div>`) + stockViz(r) + `<div class="card"><table><tr><th>${t('poolL')}</th><th>${t('itm')}</th><th>${t('size')}</th><th>${t('onhand')}</th><th>${t('min')}</th></tr>${r.stock.map(s=>`<tr class="${Number(s.MinLevel)&&Number(s.OnHand)<=Number(s.MinLevel)?'low':''}"><td>${esc(pl(s.Pool))}</td><td>${esc(s.Item)}</td><td>${esc(s.Size)}</td><td>${esc(s.OnHand)}${/\(Laundry\)$/.test(s.Size)&&Number(s.OnHand)>0?` <button class="s" onclick="washDone('${esc(s.Item)}','${esc(s.Size)}','${esc(s.Pool)}')">${t('washDone')}</button>`:''}</td><td>${esc(s.MinLevel)}</td></tr>`).join('')}</table></div>
   <div class="card"><b>${t('poolLoans')}</b><div class="small">${t('poolLoansNote')}</div>${open.map(d=>`<div class="rec small"><b>${esc(d.Item)}${d.Size?' '+esc(d.Size):''}</b> × ${esc(d.Left)} ${t('leftL')} · ${t('lentBy')} ${esc(pl(d.Lender))} ${t('toL')} ${esc(pl(d.Borrower))} · ${esc(d.Ref)} · ${fmt(d.Date)} <button class="s" onclick="settle('${esc(d.DebtID)}',${Number(d.Left)})">${t('repay')}</button></div>`).join('')||`<div class="small">${t('noDebts')}</div>`}</div>
-  <div class="card"><b>${t('bulkT')}</b><div class="small">${t('bulkHint')}</div><label>${t('poolL')}</label>${sel('bp',false)}<label>${t('refL')}</label><input id="bf" placeholder="${t('bulkRef')}"><textarea id="bt" rows="6" placeholder="Safety Boots (S3), 42, 10"></textarea><button class="p" onclick="bulkStock()">${t('bulkGo')}</button><div id="bmsg"></div></div>
+  <div class="card"><b>${t('bulkT')}</b><div class="small">${t('bulkHint')}</div><label>${t('poolL')}</label>${sel('bp',false)}<label>${t('doNo')} *</label><input id="bdo" maxlength="40"><label>${t('doSup')}</label><input id="bsu" maxlength="60"><label>${t('doDate')} *</label><input id="bdd" type="date" value="${new Date().toISOString().slice(0,10)}"><label>${t('doFile')} *</label><input id="bfile" type="file" accept="image/*,application/pdf"><div class="small">${t('doFileHint')}</div>
+  <label>${t('bulkRef')}</label><textarea id="bt" rows="6" placeholder="Safety Boots (S3), 42, 10"></textarea>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="s" onclick="csvTemplate()">${t('csvTpl')}</button></div><label>${t('csvUp')}</label><input id="bcsv" type="file" accept=".csv,text/csv" onchange="csvLoad(this)">
+  <button class="p" id="bgo" style="margin-top:12px" onclick="bulkStock()">${t('bulkGo')}</button><div id="bmsg"></div></div>
+  <div class="card"><b>${t('doT')}</b>${dv&&dv.ok&&dv.list?(dv.list.map(d=>`<div class="rec small"><b>${esc(d.DONo)}</b> · ${esc(d.Supplier||'')} · ${esc(pl(d.Pool))} · ${fmt(d.Date).slice(0,11)} · ${esc(d.TotalQty)} pcs · ${esc(d.UploadedBy)}<br>${itemsTxt(d.Lines)} <button class="s" onclick="viewDO('${esc(d.DOID)}')">${t('doView')}</button></div>`).join('')||`<span class="small">${t('doNone')}</span>`):''}</div>
   <div class="card"><b>${t('singleAdd')}</b><label>${t('poolL')}</label>${sel('sp2',false)}<label>${t('itm')}</label><select id="si" onchange="stSizes()"><option value="">${t('select')}</option>${r.items.map(i=>`<option value="${esc(i.Item)}" data-s="${esc(i.Sizes)}">${esc(i.Item)}</option>`).join('')}</select>
   <label>${t('size')}</label><select id="ss"><option value="">–</option></select><label>${t('qty')} ${A?'(− = correction)':''}</label><input id="sq" type="number" value="1">
   ${A?`<label>${t('min')}</label><input id="sm" type="number" min="0" placeholder="0">`:''}<label>${t('refL')}</label><input id="sf"><label>${t('reasonTxt')}</label><input id="sr"><button class="p" onclick="addStock()">${t('save')}</button><div id="msg"></div></div>
   <div class="card"><b>${t('logT')}</b>${r.log.map(l=>`<div class="rec small">${fmt(l.Timestamp)} · ${esc(pl(l.Pool))} · ${esc(l.Item)} ${esc(l.Size)} · <b>${l.Change>0?'+':''}${esc(l.Change)}</b> · ${esc(l.Reason)} ${esc(l.Ref)} · ${esc(l.Actor)}</div>`).join('')||`<span class="small">${t('none')}</span>`}</div>`;
 }
 async function settle(id,left){ const q = prompt(t('repayQty'),String(left)); if(!q) return; const r = await api({action:'poolSettle',pin:S.pin,id,qty:q}); if(!r.ok) return alert(err(r.error)+' '+(r.detail||'')); vStock(); }
+function parseStockLine(x){
+  const low=x.toLowerCase(), it=(S.items||[]).map(i=>i.Item).filter(n=>low.startsWith(n.toLowerCase())).sort((a,b)=>b.length-a.length)[0];
+  if(it){ let rest=x.slice(it.length).split(/[,\t;]/).map(y=>y.trim()); if(rest[0]==='') rest=rest.slice(1); return rest.length>=2?{item:it,size:rest[0],qty:rest[1]}:{item:it,size:'',qty:rest[0]}; }
+  const p=x.split(/[,\t;]/).map(y=>y.trim()); return p.length>=3?{item:p[0],size:p[1],qty:p[2]}:{item:p[0],size:'',qty:p[1]};
+}
+const readB64 = f => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
+async function doFilePayload(f){
+  if(f.type==='application/pdf'){ if(f.size>5.5e6) throw {error:'DO_FILE_BIG'}; return {name:f.name,mime:f.type,b64:await readB64(f)}; }
+  if(!/^image\//.test(f.type)) throw {error:'DO_FILE_REQUIRED'};
+  const url=URL.createObjectURL(f), img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+  const k=Math.min(1,1800/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+  const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+  return {name:f.name.replace(/\.\w+$/,'')+'.jpg',mime:'image/jpeg',b64:c.toDataURL('image/jpeg',.82).split(',')[1]};
+}
 async function bulkStock(){
-  const lines = $('bt').value.split(/\n/).map(x=>x.trim()).filter(Boolean).map(x=>{ const p=x.split(/[,\t;]/).map(y=>y.trim()); return p.length>=3?{item:p[0],size:p[1],qty:p[2]}:{item:p[0],size:'',qty:p[1]}; });
-  if(!lines.length) return;
-  const r = await api({action:'stockBulk',pin:S.pin,pool:$('bp').value,ref:$('bf').value,lines});
-  if(!r.ok) return $('bmsg').innerHTML='<div class="err">'+E(r)+'</div>';
+  const lines = $('bt').value.split(/\n/).map(x=>x.trim()).filter(Boolean).map(parseStockLine), msg = m=>$('bmsg').innerHTML='<div class="err">'+esc(m)+'</div>';
+  if(!lines.length) return msg(err('BAD_INPUT'));
+  const doNo=$('bdo').value.trim(), doDate=$('bdd').value, f=$('bfile').files[0];
+  if(!doNo||!doDate) return msg(err('DO_REQUIRED'));
+  if(!f) return msg(err('DO_FILE_REQUIRED'));
+  $('bgo').disabled=true; let file; try{ file=await doFilePayload(f); }catch(e){ $('bgo').disabled=false; return msg(err((e&&e.error)||'DO_FILE_REQUIRED')); }
+  const r = await api({action:'stockBulk',pin:S.pin,pool:$('bp').value,doNo,supplier:$('bsu').value.trim(),doDate,file,lines});
+  if(!r.ok){ $('bgo').disabled=false; return $('bmsg').innerHTML='<div class="err">'+E(r)+'</div>'; }
   vStock();
+}
+function csvQ(v){ return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'; }
+function csvTemplate(){
+  const rows=['Item,Size,Qty'];
+  (S.items||[]).forEach(i=>{ const sz=String(i.Sizes||'').split(',').filter(Boolean); (sz.length?sz:['']).forEach(s=>rows.push(csvQ(i.Item)+','+csvQ(s)+',')); });
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv'})); a.download='PPE_Stock_Upload_Template.csv'; a.click();
+}
+function csvFields(l){ const o=[]; let cur='',q=false; for(let i=0;i<l.length;i++){ const ch=l[i]; if(q){ if(ch==='"'){ if(l[i+1]==='"'){ cur+='"'; i++; } else q=false; } else cur+=ch; } else if(ch==='"') q=true; else if(ch===','||ch===';'||ch==='\t'){ o.push(cur.trim()); cur=''; } else cur+=ch; } o.push(cur.trim()); return o; }
+function csvLoad(inp){
+  const f=inp.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ const out=[]; String(r.result).replace(/^\uFEFF/,'').split(/\r?\n/).forEach((l,i)=>{ if(!l.trim()) return; const p=csvFields(l); if(i===0&&/^item$/i.test(p[0])) return; if(p[0]&&Number(p[2])>0) out.push(p[0]+', '+(p[1]||'')+', '+Number(p[2])); }); $('bt').value=out.join('\n'); };
+  r.readAsText(f);
+}
+async function viewDO(id){
+  const r = await api({action:'deliveryFile',pin:S.pin,id}); if(!r.ok) return alert(err(r.error));
+  const bin=atob(r.b64), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+  const url=URL.createObjectURL(new Blob([u8],{type:r.mime})); alert(t(r.verified?'doOk':'doBad')); window.open(url,'_blank');
 }
 async function vAdmin(){
   $('pane').innerHTML='…'; const r = await api({action:'itemList',pin:S.pin});

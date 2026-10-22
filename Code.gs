@@ -6,7 +6,7 @@
  * Flow: Employee requests (app / QR)  ->  Approver approves  ->  employee gets OTP by email
  *       ->  Storekeeper enters OTP at the counter and issues  ->  receipt emailed + stock deducted + audit trail.
  */
-const VERSION = '2.12.0';
+const VERSION = '2.13.0';
 const OTP_DAYS = 14;        // approved request must be collected within this many days
 const MAX_OTP_TRIES = 5;
 const MAX_OPEN_PER_PERSON = 3;
@@ -24,6 +24,7 @@ const SHEETS = {
     'IssuedBy', 'IssuedAt', 'ReceiptCode', 'Note', 'Reminded', 'Pool'],
   Loans: ['LoanID', 'CreatedAt', 'Visitors', 'VisitorCompany', 'HostID', 'HostName', 'HostEmail', 'Items', 'Purpose', 'Status', 'OutBy', 'ReturnedAt', 'ReturnedBy', 'Condition', 'Note', 'LastChased', 'Chases', 'Type', 'Due', 'Pool'],
   Recipients: ['Email', 'Name', 'Type', 'Active'],   // Type: MonthlyProject = monthly Project PPE report; IssueAsset = an email for every Asset issue
+  Deliveries: ['DOID', 'Date', 'DONo', 'Supplier', 'Pool', 'Lines', 'TotalQty', 'FileName', 'FileMime', 'FileId', 'FileHash', 'UploadedBy', 'UploadedAt'],   // every stock receipt: delivery order number + the scanned DO file kept in Drive (SHA-256 recorded)
   PoolDebt: ['DebtID', 'Date', 'Item', 'Size', 'Qty', 'Repaid', 'Lender', 'Borrower', 'Ref', 'Status', 'LastBy', 'LastAt'],
   Training: ['Timestamp', 'PersonID', 'Name', 'Company', 'Score', 'Total', 'Module'],
   Audit: ['Timestamp', 'ReqID', 'Event', 'Actor', 'Detail']
@@ -140,21 +141,24 @@ function doPost(e) {
       case 'trainDone': return json_(trainDone_(p));
       case 'loginStart': return json_(loginStart_(p));
       case 'loginVerify': return json_(loginVerify_(p));
+      case 'logout': return json_(logout_(p));
     }
     // ---- staff (session token from the emailed-code login; sent in the field 'pin') ----
     const u = auth_(p.pin);
     if (!u.ok) return json_(u);
-    const isA = u.role === 'approver';
+    const isA = u.role === 'approver', uv = u.owner ? Object.assign({}, u, { pool: 'All' }) : u;   // uv = what this person may VIEW
     switch (p.action) {
-      case 'login': return json_({ ok: true, name: u.name, role: u.role, pool: u.pool, version: VERSION });
+      case 'login': return json_({ ok: true, name: u.name, role: u.role, pool: u.owner ? 'All' : u.pool, owner: u.owner, version: VERSION });
       case 'queue': return json_(queue_(isA, u));
       case 'issue': return json_(issue_(p, u));
-      case 'stock': return json_(stock_(isA, u));
+      case 'stock': return json_(stock_(isA, uv));
+      case 'deliveries': return json_(deliveries_(uv));
+      case 'deliveryFile': return json_(deliveryFile_(p, uv));
       case 'stockAdd': return json_(stockAdd_(p, u, isA));
       case 'stockBulk': return json_(stockBulk_(p, u, isA));
       case 'poolDebts': return json_(poolDebts_());
       case 'poolSettle': return json_(poolSettle_(p, u));
-      case 'records': return json_(records_(isA, u));
+      case 'records': return json_(records_(isA, uv));
       case 'loanInfo': return json_(loanInfo_());
       case 'loanCreate': return json_(loanCreate_(p, u));
       case 'loans': return json_(loans_());
@@ -168,7 +172,7 @@ function doPost(e) {
       case 'approve': return json_(approve_(p, u));
       case 'reject': return json_(reject_(p, u));
       case 'void': return json_(void_(p, u));
-      case 'report': return json_(report_(u));
+      case 'report': return json_(report_(uv));
       case 'itemList': return json_({ ok: true, items: rows_('Items') });
       case 'itemApproval': return json_(itemApproval_(p, u));
       case 'history': return json_(history_(p));
@@ -230,9 +234,10 @@ function userByEmail_(em) {
   em = String(em || '').trim().toLowerCase(); if (!em) return null;
   return rows_('Users').filter(function (x) { return String(x.Active).toLowerCase() !== 'no' && String(x.Email).trim().toLowerCase() === em; })[0] || null;
 }
+const OWNER_EMAILS = ['ignatius.ambrosio@ecooils.com.my'];   // the app owner: can SEE everything (both pools, deliveries, records, reports); approving stays limited to his own pool
 function userInfo_(u) {
   const a = String(u.Role).toLowerCase() === 'approver';
-  return { ok: true, name: u.Name, role: a ? 'approver' : 'store', pool: a ? userPool_(u.Pool) : 'All' };
+  return { ok: true, name: u.Name, role: a ? 'approver' : 'store', pool: a ? userPool_(u.Pool) : 'All', owner: OWNER_EMAILS.indexOf(String(u.Email || '').toLowerCase()) >= 0 };
 }
 const EMAIL_DOMAINS = ['ecooils.com.my', 'ecooils.co.id'];   // only company addresses are accepted
 function validEmail_(em) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) && em.length <= 80; }
@@ -266,11 +271,26 @@ function loginVerify_(p) {
   c.remove('lc_' + key); c.remove('lt_' + key);
   const token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
   c.put('s_' + hash_('tok|' + token), em, SESSION_SEC);
+  if (p.keep) keepSession_(token, em);
   audit_('LOGIN', 'STAFF_LOGIN', u.Name, em);
-  const o = userInfo_(u); o.token = token; o.version = VERSION; return o;
+  const o = userInfo_(u); o.token = token; o.version = VERSION; o.keep = !!p.keep; if (o.owner) o.pool = 'All'; return o;
+}
+const KEEP_DAYS = 30;   // 'Keep me logged in' sessions
+function keepSession_(token, em) {
+  const pr = PropertiesService.getScriptProperties(), all = pr.getProperties(), now = Date.now();
+  Object.keys(all).forEach(function (k) { if (k.indexOf('k_') === 0 && Number(String(all[k]).split('|')[1]) < now) pr.deleteProperty(k); });   // tidy expired
+  pr.setProperty('k_' + hash_('tok|' + token), em + '|' + (now + KEEP_DAYS * 86400000));
+}
+function logout_(p) {
+  const h = hash_('tok|' + String(p.pin || '')); CacheService.getScriptCache().remove('s_' + h); PropertiesService.getScriptProperties().deleteProperty('k_' + h); return { ok: true };
 }
 function auth_(token) {
-  const c = CacheService.getScriptCache(), em = token ? c.get('s_' + hash_('tok|' + String(token))) : null;
+  const c = CacheService.getScriptCache(), h = token ? hash_('tok|' + String(token)) : '';
+  let em = h ? c.get('s_' + h) : null;
+  if (!em && h) {   // 6-hour cache expired: look for a 'keep me logged in' session
+    const v = PropertiesService.getScriptProperties().getProperty('k_' + h);
+    if (v && Number(v.split('|')[1]) > Date.now()) { em = v.split('|')[0]; c.put('s_' + h, em, SESSION_SEC); }
+  }
   const u = em ? userByEmail_(em) : null;
   if (!u) return { ok: false, error: 'SESSION_EXPIRED' };
   return userInfo_(u);
@@ -635,10 +655,31 @@ function stockAddOne_(p, u, isA) {
   return { ok: true };
 }
 function stockAdd_(p, u, isA) {
+  if (Math.floor(Number(p.qty)) > 0) { if (!isA) return { ok: false, error: 'DO_REQUIRED' }; if (!String(p.reason || '').trim()) p.reason = 'Adjustment (no DO)'; }   // receipts go through the delivery-order upload
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try { return stockAddOne_(p, u, isA); } finally { lock.releaseLock(); }
 }
 /* Store uploads a delivery / opening count for ONE pool: lines = [{item,size,qty}] (all-or-nothing validation first). */
+const DO_MAX_B64 = 8000000, DO_MIME = ['image/jpeg', 'image/png', 'application/pdf'];
+function bytesHash_(bytes) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join(''); }
+function doFolder_() {
+  const pr = PropertiesService.getScriptProperties(), id = pr.getProperty('DO_FOLDER');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) { } }
+  const f = DriveApp.createFolder('EcoOils PPE Delivery Orders'); pr.setProperty('DO_FOLDER', f.getId()); return f;
+}
+/* Delivery orders: list (no Drive ids) and fetch one file through the app (stays private in Drive; hash re-checked on every view) */
+function deliveries_(u) {
+  return { ok: true, list: rows_('Deliveries').reverse().slice(0, 200).filter(function (d) { return canPool_(u, d.Pool); }).map(function (d) {
+    return { DOID: d.DOID, Date: d.Date, DONo: d.DONo, Supplier: d.Supplier, Pool: d.Pool, Lines: d.Lines, TotalQty: d.TotalQty, FileName: d.FileName, UploadedBy: d.UploadedBy, UploadedAt: d.UploadedAt, FileHash: d.FileHash }; }) };
+}
+function deliveryFile_(p, u) {
+  const d = rows_('Deliveries').filter(function (x) { return x.DOID === String(p.id || ''); })[0];
+  if (!d || !canPool_(u, d.Pool)) return { ok: false, error: 'NOT_FOUND' };
+  try {
+    const bytes = DriveApp.getFileById(d.FileId).getBlob().getBytes();
+    return { ok: true, name: d.FileName || (d.DOID + '.' + (d.FileMime === 'application/pdf' ? 'pdf' : 'jpg')), mime: d.FileMime, b64: Utilities.base64Encode(bytes), verified: bytesHash_(bytes) === String(d.FileHash) };
+  } catch (e) { return { ok: false, error: 'DO_FAILED' }; }
+}
 function stockBulk_(p, u, isA) {
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
@@ -651,9 +692,26 @@ function stockBulk_(p, u, isA) {
       const sizes = String(it.Sizes || '').split(',').filter(Boolean), sz = String(lines[i].size || '');
       if (sizes.length && sizes.indexOf(sz) < 0 && !/\(Laundry\)$/.test(sz)) return { ok: false, error: 'BAD_LINE', detail: 'line ' + (i + 1) + ': size ' + sz + ' – ' + it.Item };
     }
-    lines.forEach(function (l) { stockAddOne_({ item: l.item, size: l.size, qty: l.qty, pool: pl, reason: 'Received – ' + (String(p.ref || '').slice(0, 30) || 'upload'), ref: p.ref }, u, isA); });
-    audit_('STOCK', 'STOCK_UPLOAD', u.name, pl + ' / ' + lines.length + ' lines / ' + String(p.ref || ''));
-    return { ok: true, lines: lines.length };
+    // a delivery order (number + scanned file) is REQUIRED for every receipt, so each stock increase can be verified
+    const doNo = String(p.doNo || '').trim().slice(0, 40), sup = String(p.supplier || '').trim().slice(0, 60), doDate = String(p.doDate || '').trim(), f = p.file || {};
+    if (!doNo) return { ok: false, error: 'DO_REQUIRED' };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(doDate)) return { ok: false, error: 'DO_REQUIRED' };
+    const mime = String(f.mime || '').toLowerCase(), b64 = String(f.b64 || '');
+    if (!b64 || DO_MIME.indexOf(mime) < 0) return { ok: false, error: 'DO_FILE_REQUIRED' };
+    if (b64.length > DO_MAX_B64) return { ok: false, error: 'DO_FILE_BIG' };
+    if (rows_('Deliveries').some(function (d) { return String(d.DONo).toLowerCase() === doNo.toLowerCase() && String(d.Supplier).toLowerCase() === sup.toLowerCase(); })) return { ok: false, error: 'DO_DUPLICATE', detail: doNo };
+    let bytes, fileId, doId;
+    try {
+      bytes = Utilities.base64Decode(b64);
+      doId = 'DO-' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyMMdd') + '-' + ('00' + (rows_('Deliveries').length + 1)).slice(-3);
+      const ext = mime === 'application/pdf' ? 'pdf' : mime === 'image/png' ? 'png' : 'jpg';
+      fileId = doFolder_().createFile(Utilities.newBlob(bytes, mime, doId + '_' + doNo.replace(/[^\w.-]/g, '_') + '.' + ext)).getId();
+    } catch (e) { return { ok: false, error: 'DO_FAILED' }; }
+    const hash = bytesHash_(bytes), total = lines.reduce(function (s, l) { return s + Math.floor(Number(l.qty)); }, 0);
+    lines.forEach(function (l) { stockAddOne_({ item: l.item, size: l.size, qty: l.qty, pool: pl, reason: 'Received – DO ' + doNo, ref: doId }, u, isA); });
+    sh_('Deliveries').appendRow([doId, doDate, doNo, sup, pl, JSON.stringify(lines.map(function (l) { return { item: l.item, size: String(l.size || ''), qty: Math.floor(Number(l.qty)) }; })), total, String(f.name || '').slice(0, 80), mime, fileId, hash, u.name, new Date()]);
+    audit_(doId, 'STOCK_UPLOAD', u.name, pl + ' / DO ' + doNo + ' / ' + sup + ' / ' + lines.length + ' lines / ' + total + ' pcs / sha256 ' + hash.slice(0, 12));
+    return { ok: true, lines: lines.length, doId: doId };
   } finally { lock.releaseLock(); }
 }
 /* ---- Pool loans: Project and Asset can cover each other's shortages; the borrower repays when its stock arrives ---- */

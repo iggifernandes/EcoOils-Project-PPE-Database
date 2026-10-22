@@ -139,3 +139,12 @@ Use your PERSONAL Gmail for steps 1–4 (not the work email).
 • Personnel emails are NOT pre-loaded. A registered person with a blank Email types their own email on the request screen; the code goes there, the store ticks "ID checked", and after a correct issue the email is saved to the Personnel sheet (audit EMAIL_SAVED). Next time they just pick their name.
 • Workers with no company email still choose a sponsor.
 • To change the allowed domains edit EMAIL_DOMAINS near the top of the login section in Code.gs.
+
+## v2.13.0 / page v2.15.0 – delivery orders, owner view, keep me logged in
+• Delivery order (DO) is REQUIRED for every stock receipt (Stock > Upload stock): DO number, DO date, supplier, and a scan/photo of the signed DO (JPG, PNG or PDF, about 5 MB max). Stock cannot be added without it, the same DO number cannot be used twice per supplier, and each file's SHA-256 is saved so any later change is detected when it is viewed.
+• Files are stored privately in your Google Drive (folder "EcoOils PPE Delivery Orders", created automatically on the first upload; Drive asks you to authorise once when you redeploy). Staff view them inside the app (Stock > Delivery orders > View DO); nobody needs Drive access.
+• New Deliveries sheet lists every receipt (DOID, date, DO no, supplier, pool, lines, total, uploader, file hash). Opening stock counts also need a document: use a DO number such as OPENING-001 and attach a photo of the signed count sheet.
+• CSV: Stock > Download CSV template (also provided as PPE_Stock_Upload_Template.csv), fill the Qty column, then "Upload a CSV file". The lines appear in the box so they can be checked before pressing Upload.
+• Single "Add one item" with a positive quantity is now for approver adjustments only (logged "Adjustment (no DO)"). Store staff must use the delivery-order upload.
+• Owner (Iggy, set in OWNER_EMAILS in Code.gs) can SEE everything: both pools, stock, deliveries, records, reports. Approving stays limited to his own pool.
+• Staff login has "Keep me logged in (30 days)". Without it the session lasts 6 hours. Log out ends either kind.
