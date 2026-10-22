@@ -6,7 +6,7 @@
  * Flow: Employee requests (app / QR)  ->  Approver approves  ->  employee gets OTP by email
  *       ->  Storekeeper enters OTP at the counter and issues  ->  receipt emailed + stock deducted + audit trail.
  */
-const VERSION = '2.13.0';
+const VERSION = '2.14.0';
 const OTP_DAYS = 14;        // approved request must be collected within this many days
 const MAX_OTP_TRIES = 5;
 const MAX_OPEN_PER_PERSON = 3;
@@ -23,9 +23,8 @@ const SHEETS = {
     'PhotoId', 'Flags', 'Status', 'TokenHash', 'ApprovedBy', 'ApprovedAt', 'ApprovedItems', 'OtpHash', 'OtpExpires', 'Tries',
     'IssuedBy', 'IssuedAt', 'ReceiptCode', 'Note', 'Reminded', 'Pool'],
   Loans: ['LoanID', 'CreatedAt', 'Visitors', 'VisitorCompany', 'HostID', 'HostName', 'HostEmail', 'Items', 'Purpose', 'Status', 'OutBy', 'ReturnedAt', 'ReturnedBy', 'Condition', 'Note', 'LastChased', 'Chases', 'Type', 'Due', 'Pool'],
-  Recipients: ['Email', 'Name', 'Type', 'Active'],   // Type: MonthlyProject = monthly Project PPE report; IssueAsset = an email for every Asset issue
+  Recipients: ['Email', 'Name', 'Type', 'Active'],   // Type: MonthlyProject = monthly Project PPE report
   Deliveries: ['DOID', 'Date', 'DONo', 'Supplier', 'Pool', 'Lines', 'TotalQty', 'FileName', 'FileMime', 'FileId', 'FileHash', 'UploadedBy', 'UploadedAt'],   // every stock receipt: delivery order number + the scanned DO file kept in Drive (SHA-256 recorded)
-  PoolDebt: ['DebtID', 'Date', 'Item', 'Size', 'Qty', 'Repaid', 'Lender', 'Borrower', 'Ref', 'Status', 'LastBy', 'LastAt'],
   Training: ['Timestamp', 'PersonID', 'Name', 'Company', 'Score', 'Total', 'Module'],
   Audit: ['Timestamp', 'ReqID', 'Event', 'Actor', 'Detail']
 };
@@ -71,6 +70,7 @@ const CATALOG = [
   ['Full Face Respirator (P3 Filter)', 'Respiratory', 'S,M,L', 0, 'No', 'No', 'Yes']
 ];
 function setup() {
+  try { const rs = sh_('Recipients'); if (rs && rs.getLastRow() > 1) { const rv = rs.getDataRange().getValues(); for (let i = 1; i < rv.length; i++) if (String(rv[i][2]) === 'IssueAsset') rs.getRange(i + 1, 4).setValue('No'); } } catch (e) { }   // Asset emails are switched off
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   Object.keys(SHEETS).forEach(function (n) {
     const sh = ss.getSheetByName(n) || ss.insertSheet(n);
@@ -87,7 +87,7 @@ function setup() {
   const us = ss.getSheetByName('Users');
   if (us.getLastRow() === 1) loadTeamUsers();
   const rc = ss.getSheetByName('Recipients');
-  if (rc.getLastRow() === 1) rc.getRange(2, 1, 2, 4).setValues([['Darren.Lim@ecooils.com.my', 'Darren Lim', 'MonthlyProject', 'No'], ['satish@ecooils.co.id', 'Satish', 'IssueAsset', 'No']]);
+  if (rc.getLastRow() === 1) rc.getRange(2, 1, 1, 4).setValues([['Darren.Lim@ecooils.com.my', 'Darren Lim', 'MonthlyProject', 'No']]);
   const p = PropertiesService.getScriptProperties();
   if (!p.getProperty('SALT')) p.setProperty('SALT', Utilities.getUuid() + Utilities.getUuid());
   if (!p.getProperty('FRONTEND_URL')) p.setProperty('FRONTEND_URL', 'https://YOURNAME.github.io/PPE-System/');
@@ -103,12 +103,13 @@ function setup() {
 /* Run once (or any time): adds / updates the team in Users. Staff log in with their EMAIL + a one-time code that is emailed to them (no PINs). */
 const TEAM = [
   ['Iggy', 'approver', 'Ignatius.Ambrosio@ecooils.com.my', 'Project'],
-  ['Irfan', 'approver', 'irfan.amin@ecooils.co.id', 'Asset'],
   ['Store 1 – Anthony Akbar', 'store', 'Anthony.Akbar@ecooils.co.id', 'All'],
   ['Store 2 – Edolando Sembiring', 'store', 'Edolando.Sembiring@ecooils.co.id', 'All']
 ];
+const RETIRED = ['irfan.amin@ecooils.co.id'];   // Asset approver: no longer part of this app (switched off, row kept)
 function loadTeamUsers() {
   const sh = sh_('Users'), h = SHEETS.Users;
+  { const v0 = sh.getDataRange().getValues(), e0 = v0[0].indexOf('Email'), a0 = v0[0].indexOf('Active'); for (let i = 1; i < v0.length; i++) if (RETIRED.indexOf(String(v0[i][e0]).toLowerCase()) >= 0) sh.getRange(i + 1, a0 + 1).setValue('No'); }
   TEAM.forEach(function (m, k) {
     const v = sh.getDataRange().getValues(), eIdx = v[0].indexOf('Email'), nIdx = v[0].indexOf('Name');
     let row = 0;
@@ -156,8 +157,6 @@ function doPost(e) {
       case 'deliveryFile': return json_(deliveryFile_(p, uv));
       case 'stockAdd': return json_(stockAdd_(p, u, isA));
       case 'stockBulk': return json_(stockBulk_(p, u, isA));
-      case 'poolDebts': return json_(poolDebts_());
-      case 'poolSettle': return json_(poolSettle_(p, u));
       case 'records': return json_(records_(isA, uv));
       case 'loanInfo': return json_(loanInfo_());
       case 'loanCreate': return json_(loanCreate_(p, u));
@@ -213,17 +212,18 @@ function setReq_(row, obj) {
   Object.keys(obj).forEach(function (k) { sh_('Requests').getRange(row, SHEETS.Requests.indexOf(k) + 1).setValue(obj[k]); });
 }
 function audit_(id, ev, actor, detail) { sh_('Audit').appendRow([new Date(), id, ev, actor, detail || '']); }
-/* ---- Pools: every person, request and stock row belongs to Project or Asset (blank = Project). Approvers are scoped per pool (Users.Pool: Project / Asset / All). ---- */
-const POOLS = ['Project', 'Asset'];
-function pool_(v) { return String(v) === 'Project' ? 'Project' : 'Asset'; }   // Project = only people marked Project; everyone/everything else = Asset
-function otherPool_(p) { return p === 'Asset' ? 'Project' : 'Asset'; }
-function userPool_(v) { const x = String(v || '').trim().toLowerCase(); return x === 'asset' ? 'Asset' : x === 'project' ? 'Project' : 'All'; }
-function canPool_(u, pool) { return u.pool === 'All' || u.pool === pool_(pool); }
+/* ---- PROJECT ONLY (v2.14): this app serves the Project team only. Asset follows a separate procedure and is not handled here.
+ * Rows written by earlier versions with Pool = Asset are kept in the Sheet but ignored everywhere. ---- */
+const POOLS = ['Project'];
+function pool_(v) { return String(v).trim().toLowerCase() === 'asset' ? 'Asset' : 'Project'; }   // only 'Asset' (legacy rows) is set apart; everything new is Project
+function isProjectPerson_(x) { return String(x.Pool).trim().toLowerCase() === 'project'; }   // Personnel: only people marked Project may use this app
+function userPool_(v) { return 'Project'; }
+function canPool_(u, pool) { return pool_(pool) === 'Project'; }
 function recips_(type) {
   return rows_('Recipients').filter(function (x) { return String(x.Type) === type && String(x.Active).toLowerCase() !== 'no' && x.Email; }).map(function (x) { return x.Email; });
 }
 function approverMail_(pool, subject, body) {
-  const to = rows_('Users').filter(function (x) { return String(x.Role).toLowerCase() === 'approver' && String(x.Active).toLowerCase() !== 'no' && x.Email && (userPool_(x.Pool) === 'All' || userPool_(x.Pool) === pool_(pool)); }).map(function (x) { return x.Email; });
+  const to = rows_('Users').filter(function (x) { return String(x.Role).toLowerCase() === 'approver' && String(x.Active).toLowerCase() !== 'no' && x.Email; }).map(function (x) { return x.Email; });
   try { mail_(to.length ? to.join(',') : prop_('ADMIN_EMAIL'), subject, body); } catch (e) { }
 }
 /* ---- Staff login: email + one-time code (no PINs). ----
@@ -323,7 +323,7 @@ function cleanItems_(items, catalog, strict) {
 
 /* ================= Employee (public) ================= */
 function people_() {
-  return { ok: true, people: rows_('Personnel').filter(function (x) { return String(x.Active).toLowerCase() !== 'no'; })
+  return { ok: true, people: rows_('Personnel').filter(function (x) { return String(x.Active).toLowerCase() !== 'no' && isProjectPerson_(x); })
     .map(function (x) { return { PersonID: x.PersonID, Name: x.Name, Company: x.Company, Sponsor: String(x.Sponsor).toLowerCase() === 'yes' && !!x.Email, NoEmail: !x.Email }; }) };
 }
 
@@ -355,11 +355,10 @@ function submit_(p) {
     const free = items.filter(function (i) { return isFree_(catalog, i.item); }), paid = items.filter(function (i) { return !isFree_(catalog, i.item); });
     if (free.some(function (i) { return i.qty > AUTO_MAX_QTY; })) return { ok: false, error: 'AUTO_QTY' };
     const parts = (free.length ? 1 : 0) + (paid.length ? 1 : 0);
-    const base = []; let per, verified = 'Yes', sponsor = null, pool = 'Asset';
+    const base = []; let per, verified = 'Yes', sponsor = null, pool = 'Project';
     if (p.personId) {
       per = rows_('Personnel').filter(function (x) { return String(x.PersonID) === String(p.personId) && String(x.Active).toLowerCase() !== 'no'; })[0];
-      if (!per) return { ok: false, error: 'PERSON_NOT_FOUND' };
-      pool = pool_(per.Pool);
+      if (!per || !isProjectPerson_(per)) return { ok: false, error: 'PERSON_NOT_FOUND' };
       const se = String(p.email || '').trim().toLowerCase();
       if (!per.Email && se) {   // registered person with no email on file types their own: code goes there, ID checked at the store, saved to the register after a correct issue
         if (!validEmail_(se)) return { ok: false, error: 'BAD_EMAIL' };
@@ -371,7 +370,7 @@ function submit_(p) {
       const nn = p.newPerson || {};
       if (!String(nn.name || '').trim() || !String(nn.company || '').trim()) return { ok: false, error: 'DETAILS_REQUIRED' };
       per = { PersonID: 'NEW', Name: String(nn.name).trim().slice(0, 80), Company: String(nn.company).trim().slice(0, 60), Email: '' };
-      verified = 'No'; base.push('NOT_IN_REGISTER'); pool = 'Asset';
+      verified = 'No'; base.push('NOT_IN_REGISTER');
       const em = String(nn.email || '').trim().toLowerCase();
       if (em) {   // new joiner enters own email: code goes there, ID is checked at the store, and they are added to the register after a correct issue
         if (!validEmail_(em)) return { ok: false, error: 'BAD_EMAIL' };
@@ -382,11 +381,11 @@ function submit_(p) {
     }
     const all = rows_('Requests');
     if (!per.Email) {   // no email on file: a sponsor receives the code and is accountable
-      sponsor = rows_('Personnel').filter(function (x) { return String(x.PersonID) === String(p.sponsorId) && String(x.Active).toLowerCase() !== 'no' && String(x.Sponsor).toLowerCase() === 'yes' && x.Email; })[0];
+      sponsor = rows_('Personnel').filter(function (x) { return String(x.PersonID) === String(p.sponsorId) && String(x.Active).toLowerCase() !== 'no' && String(x.Sponsor).toLowerCase() === 'yes' && x.Email && isProjectPerson_(x); })[0];
       if (!sponsor) return { ok: false, error: 'SPONSOR_REQUIRED' };
       const open = all.filter(function (r) { return r.Sponsor && r.Email === sponsor.Email && (r.Status === 'Requested' || r.Status === 'Approved'); }).length;
       if (open + parts > MAX_OPEN_PER_SPONSOR) return { ok: false, error: 'SPONSOR_LIMIT' };
-      base.push('SPONSORED|' + sponsor.Name); base.push('ID_CHECK'); pool = pool_(sponsor.Pool);   // sponsor's pool decides
+      base.push('SPONSORED|' + sponsor.Name); base.push('ID_CHECK');
     }
     const mine = all.filter(function (r) { return (per.PersonID !== 'NEW' ? String(r.PersonID) === String(per.PersonID) : (String(r.PersonID) === 'NEW' && String(r.Name).toLowerCase() === per.Name.toLowerCase())) && (r.Status === 'Requested' || r.Status === 'Approved'); });
     if (mine.length + parts > MAX_OPEN_PER_PERSON) return { ok: false, error: 'TOO_MANY_OPEN' };
@@ -529,19 +528,15 @@ function issue_(p, u) {
       return { ok: false, error: t >= MAX_OTP_TRIES ? 'LOCKED' : 'BAD_OTP', left: MAX_OTP_TRIES - t };
     }
     const items = JSON.parse(r.ApprovedItems), cat = rows_('Items');
-    // stock: deduct from the requester's pool; if short, the store may borrow from the other pool (recorded as a pool loan to be repaid)
-    const pool = pool_(r.Pool), other = otherPool_(pool), sh = sh_('Stock'), sv = sh.getDataRange().getValues(), low = [], plan = [], borrowedTxt = [];
-    function rowIdx(item, size, pl) { return sv.findIndex(function (x, i) { return i > 0 && x[0] === item && String(x[1]) === String(size) && pool_(x[4]) === pl; }); }
+    // stock: deduct Project stock (an item that is short stops the issue; there is no borrowing)
+    const pool = 'Project', sh = sh_('Stock'), sv = sh.getDataRange().getValues(), low = [], plan = [];
+    function rowIdx(item, size) { return sv.findIndex(function (x, i) { return i > 0 && x[0] === item && String(x[1]) === String(size) && pool_(x[4]) === 'Project'; }); }
     for (let k = 0; k < items.length; k++) {
       const it = items[k], tracked = sv.slice(1).some(function (x) { return x[0] === it.item; });
       if (!tracked) continue;
-      const i1 = rowIdx(it.item, it.size, pool), i2 = rowIdx(it.item, it.size, other);
-      const own = i1 > 0 ? Number(sv[i1][2]) : 0, oth = i2 > 0 ? Number(sv[i2][2]) : 0, short = Math.max(0, it.qty - own), label = it.item + (it.size ? ' ' + it.size : '');
-      if (short > 0) {
-        if (!p.borrow) return { ok: false, error: 'POOL_SHORT', detail: label + ' – ' + pool + ' ' + own + ', ' + other + ' ' + oth, pool: pool, other: other, canBorrow: oth >= short };
-        if (oth < short) return { ok: false, error: 'STOCK_LOW', detail: label + ' (' + pool + ' ' + own + ' / ' + other + ' ' + oth + ')' };
-      }
-      plan.push({ it: it, i1: i1, i2: i2, take: Math.min(own, it.qty), borrow: short });
+      const i1 = rowIdx(it.item, it.size), own = i1 > 0 ? Number(sv[i1][2]) : 0, label = it.item + (it.size ? ' ' + it.size : '');
+      if (it.qty > own) return { ok: false, error: 'STOCK_LOW', detail: label + ' (' + own + ' in stock)' };
+      plan.push({ it: it, i1: i1, take: it.qty });
     }
     const loanRsn = function (it) { return isLoanItem_(cat, it.item) ? 'Loan out' : 'Issued'; };
     plan.forEach(function (x) {
@@ -551,16 +546,7 @@ function issue_(p, u) {
         sh_('StockLog').appendRow([new Date(), it.item, it.size, -x.take, loanRsn(it), r.ReqID, u.name, pool]);
         if (Number(sv[x.i1][3]) && left <= Number(sv[x.i1][3])) low.push(pool + ': ' + it.item + (it.size ? ' ' + it.size : '') + ' = ' + left);
       }
-      if (x.borrow > 0) {
-        const left2 = Number(sv[x.i2][2]) - x.borrow; sv[x.i2][2] = left2; sh.getRange(x.i2 + 1, 3).setValue(left2);
-        sh_('StockLog').appendRow([new Date(), it.item, it.size, -x.borrow, loanRsn(it) + ' (borrowed by ' + pool + ')', r.ReqID, u.name, other]);
-        const did = 'PD-' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyMMdd') + '-' + ('00' + (rows_('PoolDebt').length + 1)).slice(-3);
-        sh_('PoolDebt').appendRow([did, new Date(), it.item, it.size, x.borrow, 0, other, pool, r.ReqID, 'Open', u.name, new Date()]);
-        audit_(r.ReqID, 'POOL_BORROW', u.name, did + ' ' + x.borrow + ' × ' + it.item + (it.size ? ' ' + it.size : '') + ' lent by ' + other + ' to ' + pool);
-        borrowedTxt.push(x.borrow + ' × ' + it.item + (it.size ? ' ' + it.size : ''));
-      }
     });
-    if (borrowedTxt.length) { const bm = tpl_('Pool stock borrowed', '<p>Store issued ' + esc_(r.ReqID) + ' to a <b>' + pool + '</b> person but ' + pool + ' stock was short.</p><p>Borrowed from <b>' + other + '</b>: ' + esc_(borrowedTxt.join(', ')) + '</p><p>It is recorded as a pool loan and must be repaid when stock arrives (Stock tab > Pool loans).</p>'); approverMail_(pool, 'Pool stock borrowed (' + other + ' → ' + pool + ')', bm); approverMail_(other, 'Pool stock borrowed (' + other + ' → ' + pool + ')', bm); }
     const now = new Date();
     const receipt = hash_([r.ReqID, r.PersonID, r.ApprovedItems, u.name, now.toISOString()].join('|')).slice(0, 12).toUpperCase();
     let oldNote = '';
@@ -587,7 +573,7 @@ function issue_(p, u) {
       else {
         const mx = pr.reduce(function (m, x) { const n = Number(String(x.PersonID).replace(/\D/g, '')); return n > m ? n : m; }, 0);
         addedId = 'P' + ('000' + (mx + 1)).slice(-3);
-        sh_('Personnel').appendRow([addedId, r.Name, r.Company, '', em, 'Yes', 'No', pool_(r.Pool)]);
+        sh_('Personnel').appendRow([addedId, r.Name, r.Company, '', em, 'Yes', 'No', 'Project']);
         audit_(r.ReqID, 'PERSON_ADDED', u.name, addedId + ' ' + r.Name + (em ? ' / ' + em + ' (code received + ID checked)' : ' (no email – sponsor ' + r.Sponsor + ', ID checked)'));
       }
     }
@@ -603,19 +589,12 @@ function issue_(p, u) {
       (lo.length ? '<p style="background:#fef0c7;padding:8px 12px;border-radius:8px"><b>On loan / Pinjaman:</b> ' + esc_(itemsText_(lo)) + '<br>This stays store property. Return it to the PPE store when the job is finished (reminder after ' + fmt_(due) + '). Check it before every use. If it is damaged or has stopped a fall, do not use it – return it to the store.<br>Tetap milik gudang. Kembalikan ke gudang APD setelah pekerjaan selesai. Periksa sebelum dipakai; jika rusak atau pernah menahan jatuh, jangan dipakai – kembalikan.</p>' : '') +
       careMail_(items) + '<p style="font-size:13px;color:#555">If this is wrong, contact HSSE immediately. / Jika tidak benar, hubungi HSSE segera.</p>'), r.Sponsor ? prop_('ADMIN_EMAIL') : ''); } catch (e) { }
     if (low.length) adminMail_('Low PPE stock', tpl_('Low stock', '<p>' + low.map(esc_).join('<br>') + '</p>'));
-    if (pool === 'Asset') {   // every Asset issue is reported by email to the Asset recipients (e.g. Satish)
-      const to = recips_('IssueAsset');
-      if (to.length) { try { mail_(to.join(','), 'Asset PPE issued – ' + r.Name + ' (' + r.ReqID + ')', tpl_('Asset PPE issued',
-        '<p><b>' + esc_(r.Name) + '</b> · ' + esc_(r.Company) + (r.Sponsor ? '<br>Sponsor: ' + esc_(r.Sponsor) : '') + '</p><p><b>' + esc_(itemsText_(items)) + '</b></p>' +
-        '<p>Reason: ' + esc_(r.Reason) + '<br>Approved by: ' + esc_(r.ApprovedBy) + '<br>Issued by: ' + esc_(u.name) + ' · ' + fmt_(now) + '<br>Ref: ' + r.ReqID + ' · Receipt: ' + receipt + '</p>' +
-        (lo.length ? '<p>On loan: ' + esc_(itemsText_(lo)) + ' (due ' + fmt_(due) + ')</p>' : '') + (borrowedTxt.length ? '<p>Borrowed from Project: ' + esc_(borrowedTxt.join(', ')) + '</p>' : ''))); } catch (e) { } }
-    }
-    return { ok: true, receipt: receipt, at: now.toISOString(), borrowed: borrowedTxt };
+    return { ok: true, receipt: receipt, at: now.toISOString() };
   } finally { lock.releaseLock(); }
 }
 
 function stock_(isA, u) {
-  const vis = function (pl) { return !isA || canPool_(u, pl); };
+  const vis = function (pl) { return canPool_(u, pl); };
   const all = rows_('StockLog').filter(function (l) { return vis(pool_(l.Pool)); }), lg = all.slice().reverse().slice(0, 40);
   const days = {}, now = Date.now();
   for (let i = 29; i >= 0; i--) days[Utilities.formatDate(new Date(now - i * 86400000), 'Asia/Jakarta', 'yyyy-MM-dd')] = { d: '', out: 0, inn: 0 };
@@ -638,10 +617,9 @@ function stock_(isA, u) {
 }
 
 function stockAddOne_(p, u, isA) {
-  const q = Math.floor(Number(p.qty)), it = String(p.item || ''), sz = String(p.size || ''), pl = pool_(p.pool);
+  const q = Math.floor(Number(p.qty)), it = String(p.item || ''), sz = String(p.size || ''), pl = 'Project';
   if (!it || !q) return { ok: false, error: 'BAD_INPUT', detail: it };
   if (!rows_('Items').some(function (x) { return x.Item === it; })) return { ok: false, error: 'BAD_INPUT', detail: it };
-  if (isA && !canPool_(u, pl)) return { ok: false, error: 'WRONG_POOL', detail: pl };
   const sh = sh_('Stock'), v = sh.getDataRange().getValues();
   const idx = v.findIndex(function (x, i) { return i > 0 && x[0] === it && String(x[1]) === sz && pool_(x[4]) === pl; });
   if (q < 0 && !isA) return { ok: false, error: 'NOT_ALLOWED' };   // only approver may reduce / correct stock
@@ -683,9 +661,8 @@ function deliveryFile_(p, u) {
 function stockBulk_(p, u, isA) {
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    const lines = (p.lines || []).slice(0, 300), pl = pool_(p.pool), cat = rows_('Items');
+    const lines = (p.lines || []).slice(0, 300), pl = 'Project', cat = rows_('Items');
     if (!lines.length) return { ok: false, error: 'BAD_INPUT' };
-    if (isA && !canPool_(u, pl)) return { ok: false, error: 'WRONG_POOL', detail: pl };
     for (let i = 0; i < lines.length; i++) {
       const it = catItem_(cat, String(lines[i].item || '')), q = Math.floor(Number(lines[i].qty));
       if (!it || !(q > 0)) return { ok: false, error: 'BAD_LINE', detail: 'line ' + (i + 1) + ': ' + String(lines[i].item || '') };
@@ -714,31 +691,6 @@ function stockBulk_(p, u, isA) {
     return { ok: true, lines: lines.length, doId: doId };
   } finally { lock.releaseLock(); }
 }
-/* ---- Pool loans: Project and Asset can cover each other's shortages; the borrower repays when its stock arrives ---- */
-function poolDebts_() {
-  return { ok: true, debts: rows_('PoolDebt').reverse().slice(0, 200).map(function (d) { d.Left = Number(d.Qty) - Number(d.Repaid || 0); return d; }) };
-}
-function poolSettle_(p, u) {
-  const lock = LockService.getScriptLock(); lock.waitLock(20000);
-  try {
-    const row = findRow_('PoolDebt', 1, p.id); if (!row) return { ok: false, error: 'NOT_FOUND' };
-    const h = SHEETS.PoolDebt, v = sh_('PoolDebt').getRange(row, 1, 1, h.length).getValues()[0], d = {}; h.forEach(function (k, i) { d[k] = v[i]; });
-    if (d.Status !== 'Open') return { ok: false, error: 'ALREADY_SETTLED' };
-    const left = Number(d.Qty) - Number(d.Repaid || 0), q = Math.min(left, Math.floor(Number(p.qty || left)));
-    if (!(q > 0)) return { ok: false, error: 'BAD_INPUT' };
-    if (u.role === 'approver' && !(canPool_(u, d.Lender) || canPool_(u, d.Borrower))) return { ok: false, error: 'WRONG_POOL' };
-    const bad = stockMove_(d.Item, d.Size, -q, '', '', '', true, d.Borrower); if (bad) return { ok: false, error: 'STOCK_LOW', detail: bad + ' (' + d.Borrower + ')' };
-    stockMove_(d.Item, d.Size, -q, 'Pool repay to ' + d.Lender, d.DebtID, u.name, false, d.Borrower);
-    stockMove_(d.Item, d.Size, q, 'Pool repaid by ' + d.Borrower, d.DebtID, u.name, false, d.Lender);
-    const rep = Number(d.Repaid || 0) + q, done = rep >= Number(d.Qty);
-    sh_('PoolDebt').getRange(row, h.indexOf('Repaid') + 1).setValue(rep);
-    sh_('PoolDebt').getRange(row, h.indexOf('Status') + 1).setValue(done ? 'Settled' : 'Open');
-    sh_('PoolDebt').getRange(row, h.indexOf('LastBy') + 1).setValue(u.name);
-    sh_('PoolDebt').getRange(row, h.indexOf('LastAt') + 1).setValue(new Date());
-    audit_(d.DebtID, 'POOL_REPAID', u.name, q + ' × ' + d.Item + (d.Size ? ' ' + d.Size : '') + ' ' + d.Borrower + ' → ' + d.Lender + (done ? ' (settled)' : ''));
-    return { ok: true, settled: done };
-  } finally { lock.releaseLock(); }
-}
 /* Admin: switch an item between "approval required" and "self-service (no approval)". */
 function itemApproval_(p, u) {
   const v = String(p.approval).toLowerCase() === 'no' ? 'No' : String(p.approval).toLowerCase() === 'yes' ? 'Yes' : '';
@@ -754,7 +706,7 @@ function itemApproval_(p, u) {
 
 /* ================= Records / reports ================= */
 function records_(isA, u) {
-  let list = rows_('Requests').filter(function (r) { return !isA || canPool_(u, r.Pool); }).map(function (r) {
+  let list = rows_('Requests').filter(function (r) { return canPool_(u, r.Pool); }).map(function (r) {
     return { Pool: pool_(r.Pool), ReqID: r.ReqID, CreatedAt: r.CreatedAt, PersonID: r.PersonID, Name: r.Name, Company: r.Company, Items: r.Items, Reason: r.Reason, Status: r.Status,
       ApprovedBy: r.ApprovedBy, ApprovedAt: r.ApprovedAt, ApprovedItems: r.ApprovedItems, IssuedBy: r.IssuedBy, IssuedAt: r.IssuedAt, ReceiptCode: r.ReceiptCode, Note: r.Note, Flags: r.Flags };
   }).reverse();
@@ -791,7 +743,7 @@ function dailyMaintenance() {
   const now = new Date(); const pend = [], low = [];
   rows_('Requests').forEach(function (r) {
     const row = findRow_('Requests', 1, r.ReqID);
-    if (r.Status === 'Requested' && now - new Date(r.CreatedAt) > 86400000) pend.push('[' + pool_(r.Pool) + '] ' + r.Name + ' – ' + itemsText_(JSON.parse(r.Items)) + ' (' + r.ReqID + ')');
+    if (r.Status === 'Requested' && now - new Date(r.CreatedAt) > 86400000) pend.push(r.Name + ' – ' + itemsText_(JSON.parse(r.Items)) + ' (' + r.ReqID + ')');
     if (r.Status === 'Approved') {
       if (now > new Date(r.OtpExpires)) { setReq_(row, { Status: 'Expired' }); audit_(r.ReqID, 'EXPIRED', 'System', 'Not collected'); }
       else if (!r.Reminded && now - new Date(r.ApprovedAt) > 3 * 86400000) {
@@ -800,12 +752,10 @@ function dailyMaintenance() {
       }
     }
   });
-  rows_('Stock').forEach(function (x) { if (Number(x.MinLevel) && Number(x.OnHand) <= Number(x.MinLevel)) low.push(pool_(x.Pool) + ': ' + x.Item + (x.Size ? ' ' + x.Size : '') + ' = ' + x.OnHand + ' (min ' + x.MinLevel + ')'); });
+  rows_('Stock').filter(function (x) { return pool_(x.Pool) === 'Project'; }).forEach(function (x) { if (Number(x.MinLevel) && Number(x.OnHand) <= Number(x.MinLevel)) low.push(pool_(x.Pool) + ': ' + x.Item + (x.Size ? ' ' + x.Size : '') + ' = ' + x.OnHand + ' (min ' + x.MinLevel + ')'); });
   const out = rows_('Loans').filter(function (l) { return l.Status === 'Out' && (l.Type !== 'Employee' || (l.Due && jDay_(l.Due) < jDay_(now))); }).map(function (l) { return l.Visitors + (l.Type === 'Employee' ? ' (employee loan, due ' + jDay_(l.Due) + ')' : ' (host ' + l.HostName + ')') + ' – ' + itemsText_(JSON.parse(l.Items)) + ' – ' + l.LoanID; });
   const selfFlag = rows_('Requests').filter(function (r) { return r.Status === 'Issued' && String(r.ApprovedBy).indexOf('Auto') === 0 && now - new Date(r.IssuedAt) < 86400000 && /EARLY_REISSUE|LOST/.test(r.Flags); }).map(function (r) { return r.Name + ' – ' + itemsText_(JSON.parse(r.ApprovedItems)) + ' – ' + String(r.Flags).replace(/[\[\]"]/g, '') + ' (' + r.ReqID + ')'; });
   try { chase_(false); } catch (e) { }
-  const pendA = pend.filter(function (x) { return x.indexOf('[Asset]') === 0; });
-  if (pendA.length) approverMail_('Asset', 'Asset PPE requests waiting for approval', tpl_('Waiting for your approval (>24h)', '<p>' + pendA.map(esc_).join('<br>') + '</p>'));
   if (pend.length || low.length || out.length || selfFlag.length) adminMail_('PPE daily summary', tpl_('PPE daily summary',
     (selfFlag.length ? '<p><b>Self-service items issued in the last 24h with a flag:</b><br>' + selfFlag.map(esc_).join('<br>') + '</p>' : '') +
     (out.length ? '<p><b>Visitor loans out / employee loans overdue:</b><br>' + out.map(esc_).join('<br>') + '</p>' : '') +
@@ -868,7 +818,7 @@ function loanCreate_(p, u) {
     if (!host || !host.Email) return { ok: false, error: 'HOST_REQUIRED' };
     const vis = String(p.visitors || '').trim().slice(0, 200), co = String(p.company || '').trim().slice(0, 80);
     if (!vis || !co) return { ok: false, error: 'DETAILS_REQUIRED' };
-    const items = cleanItems_(p.items, loanItems_()), lpool = pool_(host.Pool);   // visitor loan comes from the host's pool
+    const items = cleanItems_(p.items, loanItems_()), lpool = 'Project';
     if (!items.length) return { ok: false, error: 'NO_ITEMS' };
     for (let i = 0; i < items.length; i++) { const bad = stockMove_(items[i].item, items[i].size, -items[i].qty, '', '', '', true, lpool); if (bad) return { ok: false, error: 'STOCK_LOW', detail: bad }; }
     const day = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyMMdd');
@@ -927,7 +877,7 @@ function laundryDone_(p, u) {
   try {
     const q = Math.floor(Number(p.qty)), it = String(p.item || ''), sz = String(p.size || '').replace(/\s*\(Laundry\)$/, '');
     if (!it || !(q > 0)) return { ok: false, error: 'BAD_INPUT' };
-    const lp = pool_(p.pool), bad = stockMove_(it, sz ? sz + ' (Laundry)' : '(Laundry)', -q, '', '', '', true, lp); if (bad) return { ok: false, error: 'STOCK_LOW', detail: bad };
+    const lp = 'Project', bad = stockMove_(it, sz ? sz + ' (Laundry)' : '(Laundry)', -q, '', '', '', true, lp); if (bad) return { ok: false, error: 'STOCK_LOW', detail: bad };
     stockMove_(it, sz ? sz + ' (Laundry)' : '(Laundry)', -q, 'Washed', '', u.name, false, lp);
     stockMove_(it, sz, q, 'Back from laundry', '', u.name, false, lp);
     return { ok: true };

@@ -148,3 +148,10 @@ Use your PERSONAL Gmail for steps 1–4 (not the work email).
 • Single "Add one item" with a positive quantity is now for approver adjustments only (logged "Adjustment (no DO)"). Store staff must use the delivery-order upload.
 • Owner (Iggy, set in OWNER_EMAILS in Code.gs) can SEE everything: both pools, stock, deliveries, records, reports. Approving stays limited to his own pool.
 • Staff login has "Keep me logged in (30 days)". Without it the session lasts 6 hours. Log out ends either kind.
+
+## v2.14.0 / page v2.16.0 – PROJECT ONLY
+• The app now serves the Project team only. Asset follows a separate procedure and is not handled here: no Asset pool, no pool tabs or pool columns, no borrowing between pools, no pool loans, no Asset emails.
+• Who can request: people in Personnel with Pool = Project, plus new joiners who type a company email under "I am new" (they are added as Project after a correct issue). People with a blank or Asset Pool no longer appear in the name list.
+• Approver: Iggy only (owner). Irfan is switched off (Users row set Active = No by loadTeamUsers; the row stays). The Satish "IssueAsset" recipient is switched off. Store 1 and Store 2 stay.
+• If an item is short at issue, the store sees "not enough stock" and must receive stock first (delivery-order upload). There is no borrowing.
+• Old Asset rows (Stock, StockLog, Requests, Personnel) stay in the Sheet but are ignored everywhere. Delete them whenever you like. The old PoolDebt tab is no longer used.

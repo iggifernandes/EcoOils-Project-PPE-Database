@@ -82,7 +82,7 @@ details>summary{min-height:32px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.15.0';
+const VERSION = 'v2.16.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -551,7 +551,7 @@ async function staffShell(){
   const A = S.role==='approver';
   const tabs = A ? [['pending','pending'],['collect','collect'],['visitors','visitors'],['records','records'],['stock','stock'],['reports','reports'],['training','trainStaff'],['admin','adminTab'],['qr','qr']] : [['collect','collect'],['visitors','visitors'],['stock','stock'],['records','records'],['training','trainStaff']];
   if(!S.tab) S.tab = S.hl ? ((A && !PRE) ? 'pending' : 'collect') : tabs[0][0];
-  $('app').innerHTML = `<div class="small" style="margin-bottom:6px">${esc(S.name)} · ${esc(S.role)}${S.role==='approver'?' · '+(S.pool==='All'?t('allPools'):pl(S.pool)):''}</div><div class="tabs">${tabs.map(([k,l])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';staffShell()">${t(l)}</button>`).join('')}<button onclick="logout()">${t('logout')}</button></div><div id="pane"></div>`;
+  $('app').innerHTML = `<div class="small" style="margin-bottom:6px">${esc(S.name)} · ${esc(S.role)}</div><div class="tabs">${tabs.map(([k,l])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';staffShell()">${t(l)}</button>`).join('')}<button onclick="logout()">${t('logout')}</button></div><div id="pane"></div>`;
   ({pending:vQueue,collect:vQueue,visitors:vVisitors,records:vRecords,stock:vStock,reports:vReports,qr:vQR,training:vTraining,admin:vAdmin})[S.tab]();
 }
 async function loadQ(){ const r = await api({action:'queue',pin:S.pin}); if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return null; } S.loanNames = r.loanItems||[]; return r.queue; }
@@ -563,7 +563,7 @@ async function vQueue(){
 }
 function card(x){
   const A = S.role==='approver', its = JSON.parse(x.ApprovedItems || x.Items);
-  let h = `<div class="card" id="c_${esc(x.ReqID)}"><b>${esc(x.Name)}</b> <span class="small">· ${esc(x.Company)}</span> <span class="pill ${x.Status}">${esc(x.Status)}</span> <span class="pill" style="background:#ecf6f1;color:#231f20">${esc(pl(x.Pool))}</span><br><span class="small">${esc(x.ReqID)} · ${fmt(x.CreatedAt)} · ${esc(x.Reason)}</span>${flagsHtml(x.Flags)}`;
+  let h = `<div class="card" id="c_${esc(x.ReqID)}"><b>${esc(x.Name)}</b> <span class="small">· ${esc(x.Company)}</span> <span class="pill ${x.Status}">${esc(x.Status)}</span><br><span class="small">${esc(x.ReqID)} · ${fmt(x.CreatedAt)} · ${esc(x.Reason)}</span>${flagsHtml(x.Flags)}`;
   if(x.Status==='Requested'){
     h += `<div class="items" id="it_${esc(x.ReqID)}">${its.map((i,k)=>`<div style="display:flex;gap:8px;align-items:center;margin:3px 0" data-item="${esc(i.item)}" data-size="${esc(i.size)}"><span style="flex:1">${esc(i.item)}${i.size?' ('+esc(i.size)+')':''}</span><input type="number" min="0" max="20" value="${i.qty}" style="width:70px"></div>`).join('')}</div>`;
     if(x.Remark) h += `<div class="small">“${esc(x.Remark)}”</div>`;
@@ -587,15 +587,12 @@ async function approve(id){
 async function rejectReq(id){ const reason = prompt(t('rejWhy')); if(!reason) return; const r = await api({action:'reject',pin:S.pin,id,reason}); if(!r.ok) return alert(err(r.error)); S.hl=''; vQueue(); }
 async function voidReq(id){ const reason = prompt(t('voidWhy')); if(!reason) return; const r = await api({action:'void',pin:S.pin,id,reason}); if(!r.ok) return alert(err(r.error)); vQueue(); }
 async function hist(pid,id){ const r = await api({action:'history',pin:S.pin,personId:pid}); $('x_'+id).innerHTML = r.ok ? '<div class="small" style="margin-top:6px">'+(r.records.map(x=>esc(x.Status)+' · '+esc(itemsTxt(x.Items))+' · '+fmt(x.IssuedAt||x.CreatedAt)).join('<br>')||t('none'))+'</div>' : ''; }
-async function issue(id,borrow){
+async function issue(id){
   const otp = $('o_'+id).value.trim(); if(!/^\d{6}$/.test(otp)) return $('m_'+id).innerHTML = '<div class="err">'+t('otp')+'</div>';
   $('b_'+id).disabled = true;
-  const r = await api({action:'issue',pin:S.pin,id,otp,borrow:!!borrow,idChecked:!!($('k_'+id)&&$('k_'+id).checked),oldReturned:$('ro_'+id)?$('ro_'+id).value:'',oldNote:$('rn_'+id)?$('rn_'+id).value:''});
-  if(!r.ok && r.error==='POOL_SHORT' && r.canBorrow){
-    if(confirm(t('borrowQ')+'\n\n'+(r.detail||''))) return issue(id,true);
-  }
+  const r = await api({action:'issue',pin:S.pin,id,otp,idChecked:!!($('k_'+id)&&$('k_'+id).checked),oldReturned:$('ro_'+id)?$('ro_'+id).value:'',oldNote:$('rn_'+id)?$('rn_'+id).value:''});
   if(!r.ok){ $('b_'+id).disabled=false; return $('m_'+id).innerHTML = '<div class="err">'+E(r)+'</div>'; }
-  $('c_'+id).innerHTML = `<div class="ok">${t('issued')}: <b>${esc(r.receipt)}</b><br>${fmt(r.at)}${(r.borrowed&&r.borrowed.length)?`<br><span class="flag">${t('borrowedL')}: ${esc(r.borrowed.join(', '))}</span>`:''}</div>`;
+  $('c_'+id).innerHTML = `<div class="ok">${t('issued')}: <b>${esc(r.receipt)}</b><br>${fmt(r.at)}</div>`;
 }
 async function vRecords(){
   $('pane').innerHTML = '…'; const r = await api({action:'records',pin:S.pin});
@@ -617,25 +614,20 @@ function csv(){
 }
 
 async function vStock(){
-  $('pane').innerHTML='…'; const [r0,pd,dv] = await Promise.all([api({action:'stock',pin:S.pin}),api({action:'poolDebts',pin:S.pin}),api({action:'deliveries',pin:S.pin})]); S.items=(r0.items||[]);
+  $('pane').innerHTML='…'; const [r0,dv] = await Promise.all([api({action:'stock',pin:S.pin}),api({action:'deliveries',pin:S.pin})]); S.items=(r0.items||[]);
   if(!r0.ok){ if(!bad(r0)) $('pane').innerHTML='<div class="err">'+E(r0)+'</div>'; return; }
-  const A = S.role==='approver', fixed = A && S.pool!=='All' ? S.pool : '';
-  const pv = fixed || S.pv, r = Object.assign({},r0,{stock:r0.stock.filter(s=>pv==='All'||s.Pool===pv),demand:(r0.demand||[]).filter(d=>pv==='All'||d.pool===pv)});
-  const sel = (id,all)=>`<select id="${id}">${all?`<option value="All">${t('p_All')}</option>`:''}${(fixed?[fixed]:['Project','Asset']).map(p=>`<option value="${p}">${esc(pl(p))}</option>`).join('')}</select>`;
-  const open = pd.ok ? pd.debts.filter(d=>d.Status==='Open') : [];
-  $('pane').innerHTML = (fixed?'':`<div class="card"><label style="margin:0">${t('poolL')}</label><div class="tabs" style="margin:6px 0 0">${['All','Project','Asset'].map(p=>`<button class="${pv===p?'on':''}" onclick="S.pv='${p}';vStock()">${esc(p==='All'?t('p_All'):pl(p))}</button>`).join('')}</div></div>`) + stockViz(r) + `<div class="card"><table><tr><th>${t('poolL')}</th><th>${t('itm')}</th><th>${t('size')}</th><th>${t('onhand')}</th><th>${t('min')}</th></tr>${r.stock.map(s=>`<tr class="${Number(s.MinLevel)&&Number(s.OnHand)<=Number(s.MinLevel)?'low':''}"><td>${esc(pl(s.Pool))}</td><td>${esc(s.Item)}</td><td>${esc(s.Size)}</td><td>${esc(s.OnHand)}${/\(Laundry\)$/.test(s.Size)&&Number(s.OnHand)>0?` <button class="s" onclick="washDone('${esc(s.Item)}','${esc(s.Size)}','${esc(s.Pool)}')">${t('washDone')}</button>`:''}</td><td>${esc(s.MinLevel)}</td></tr>`).join('')}</table></div>
-  <div class="card"><b>${t('poolLoans')}</b><div class="small">${t('poolLoansNote')}</div>${open.map(d=>`<div class="rec small"><b>${esc(d.Item)}${d.Size?' '+esc(d.Size):''}</b> × ${esc(d.Left)} ${t('leftL')} · ${t('lentBy')} ${esc(pl(d.Lender))} ${t('toL')} ${esc(pl(d.Borrower))} · ${esc(d.Ref)} · ${fmt(d.Date)} <button class="s" onclick="settle('${esc(d.DebtID)}',${Number(d.Left)})">${t('repay')}</button></div>`).join('')||`<div class="small">${t('noDebts')}</div>`}</div>
-  <div class="card"><b>${t('bulkT')}</b><div class="small">${t('bulkHint')}</div><label>${t('poolL')}</label>${sel('bp',false)}<label>${t('doNo')} *</label><input id="bdo" maxlength="40"><label>${t('doSup')}</label><input id="bsu" maxlength="60"><label>${t('doDate')} *</label><input id="bdd" type="date" value="${new Date().toISOString().slice(0,10)}"><label>${t('doFile')} *</label><input id="bfile" type="file" accept="image/*,application/pdf"><div class="small">${t('doFileHint')}</div>
+  const A = S.role==='approver', r = r0;
+  $('pane').innerHTML = stockViz(r) + `<div class="card"><table><tr><th>${t('itm')}</th><th>${t('size')}</th><th>${t('onhand')}</th><th>${t('min')}</th></tr>${r.stock.map(s=>`<tr class="${Number(s.MinLevel)&&Number(s.OnHand)<=Number(s.MinLevel)?'low':''}"><td>${esc(s.Item)}</td><td>${esc(s.Size)}</td><td>${esc(s.OnHand)}${/\(Laundry\)$/.test(s.Size)&&Number(s.OnHand)>0?` <button class="s" onclick="washDone('${esc(s.Item)}','${esc(s.Size)}','${esc(s.Pool)}')">${t('washDone')}</button>`:''}</td><td>${esc(s.MinLevel)}</td></tr>`).join('')}</table></div>
+  <div class="card"><b>${t('bulkT')}</b><div class="small">${t('bulkHint')}</div><label>${t('doNo')} *</label><input id="bdo" maxlength="40"><label>${t('doSup')}</label><input id="bsu" maxlength="60"><label>${t('doDate')} *</label><input id="bdd" type="date" value="${new Date().toISOString().slice(0,10)}"><label>${t('doFile')} *</label><input id="bfile" type="file" accept="image/*,application/pdf"><div class="small">${t('doFileHint')}</div>
   <label>${t('bulkRef')}</label><textarea id="bt" rows="6" placeholder="Safety Boots (S3), 42, 10"></textarea>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="s" onclick="csvTemplate()">${t('csvTpl')}</button></div><label>${t('csvUp')}</label><input id="bcsv" type="file" accept=".csv,text/csv" onchange="csvLoad(this)">
   <button class="p" id="bgo" style="margin-top:12px" onclick="bulkStock()">${t('bulkGo')}</button><div id="bmsg"></div></div>
-  <div class="card"><b>${t('doT')}</b>${dv&&dv.ok&&dv.list?(dv.list.map(d=>`<div class="rec small"><b>${esc(d.DONo)}</b> · ${esc(d.Supplier||'')} · ${esc(pl(d.Pool))} · ${fmt(d.Date).slice(0,11)} · ${esc(d.TotalQty)} pcs · ${esc(d.UploadedBy)}<br>${itemsTxt(d.Lines)} <button class="s" onclick="viewDO('${esc(d.DOID)}')">${t('doView')}</button></div>`).join('')||`<span class="small">${t('doNone')}</span>`):''}</div>
-  <div class="card"><b>${t('singleAdd')}</b><label>${t('poolL')}</label>${sel('sp2',false)}<label>${t('itm')}</label><select id="si" onchange="stSizes()"><option value="">${t('select')}</option>${r.items.map(i=>`<option value="${esc(i.Item)}" data-s="${esc(i.Sizes)}">${esc(i.Item)}</option>`).join('')}</select>
+  <div class="card"><b>${t('doT')}</b>${dv&&dv.ok&&dv.list?(dv.list.map(d=>`<div class="rec small"><b>${esc(d.DONo)}</b> · ${esc(d.Supplier||'')} · ${fmt(d.Date).slice(0,11)} · ${esc(d.TotalQty)} pcs · ${esc(d.UploadedBy)}<br>${itemsTxt(d.Lines)} <button class="s" onclick="viewDO('${esc(d.DOID)}')">${t('doView')}</button></div>`).join('')||`<span class="small">${t('doNone')}</span>`):''}</div>
+  <div class="card"><b>${t('singleAdd')}</b><label>${t('itm')}</label><select id="si" onchange="stSizes()"><option value="">${t('select')}</option>${r.items.map(i=>`<option value="${esc(i.Item)}" data-s="${esc(i.Sizes)}">${esc(i.Item)}</option>`).join('')}</select>
   <label>${t('size')}</label><select id="ss"><option value="">–</option></select><label>${t('qty')} ${A?'(− = correction)':''}</label><input id="sq" type="number" value="1">
   ${A?`<label>${t('min')}</label><input id="sm" type="number" min="0" placeholder="0">`:''}<label>${t('refL')}</label><input id="sf"><label>${t('reasonTxt')}</label><input id="sr"><button class="p" onclick="addStock()">${t('save')}</button><div id="msg"></div></div>
-  <div class="card"><b>${t('logT')}</b>${r.log.map(l=>`<div class="rec small">${fmt(l.Timestamp)} · ${esc(pl(l.Pool))} · ${esc(l.Item)} ${esc(l.Size)} · <b>${l.Change>0?'+':''}${esc(l.Change)}</b> · ${esc(l.Reason)} ${esc(l.Ref)} · ${esc(l.Actor)}</div>`).join('')||`<span class="small">${t('none')}</span>`}</div>`;
+  <div class="card"><b>${t('logT')}</b>${r.log.map(l=>`<div class="rec small">${fmt(l.Timestamp)} · ${esc(l.Item)} ${esc(l.Size)} · <b>${l.Change>0?'+':''}${esc(l.Change)}</b> · ${esc(l.Reason)} ${esc(l.Ref)} · ${esc(l.Actor)}</div>`).join('')||`<span class="small">${t('none')}</span>`}</div>`;
 }
-async function settle(id,left){ const q = prompt(t('repayQty'),String(left)); if(!q) return; const r = await api({action:'poolSettle',pin:S.pin,id,qty:q}); if(!r.ok) return alert(err(r.error)+' '+(r.detail||'')); vStock(); }
 function parseStockLine(x){
   const low=x.toLowerCase(), it=(S.items||[]).map(i=>i.Item).filter(n=>low.startsWith(n.toLowerCase())).sort((a,b)=>b.length-a.length)[0];
   if(it){ let rest=x.slice(it.length).split(/[,\t;]/).map(y=>y.trim()); if(rest[0]==='') rest=rest.slice(1); return rest.length>=2?{item:it,size:rest[0],qty:rest[1]}:{item:it,size:'',qty:rest[0]}; }
@@ -657,7 +649,7 @@ async function bulkStock(){
   if(!doNo||!doDate) return msg(err('DO_REQUIRED'));
   if(!f) return msg(err('DO_FILE_REQUIRED'));
   $('bgo').disabled=true; let file; try{ file=await doFilePayload(f); }catch(e){ $('bgo').disabled=false; return msg(err((e&&e.error)||'DO_FILE_REQUIRED')); }
-  const r = await api({action:'stockBulk',pin:S.pin,pool:$('bp').value,doNo,supplier:$('bsu').value.trim(),doDate,file,lines});
+  const r = await api({action:'stockBulk',pin:S.pin,doNo,supplier:$('bsu').value.trim(),doDate,file,lines});
   if(!r.ok){ $('bgo').disabled=false; return $('bmsg').innerHTML='<div class="err">'+E(r)+'</div>'; }
   vStock();
 }
@@ -693,7 +685,7 @@ function stockViz(r){
   const untracked = r.items.filter(i=>!g[i.Item]).map(i=>i.Item);
   const cards = names.map(n=>{ const x=g[n], s=st(x.tot,x.min); return `<div style="border:1px solid var(--l);border-radius:8px;padding:8px 10px;margin:6px 0;border-left:6px solid ${col[s]}">
     <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(n)}</b><span><b style="font-size:18px">${x.tot}</b> <span class="pill" style="border-color:${col[s]}">${t(s==='ok'?'inStock':s==='low'?'lowS2':'outS')}</span></span></div>
-    <div class="small" style="margin-top:4px">${x.rows.filter(z=>z.Size).map(z=>{ const q=st(Number(z.OnHand),Number(z.MinLevel||0)); return `<span style="display:inline-block;margin:2px 8px 2px 0;padding-left:6px;border-left:4px solid ${col[q]}">${esc(z.Size)}: <b>${esc(z.OnHand)}</b></span>`; }).join('')}${lau[n]?` · ${t('laundryL')}: ${lau[n]}`:''}</div>${['Project','Asset'].some(p=>x.rows.some(z=>z.Pool===p))?`<div class="small" style="margin-top:2px">${['Project','Asset'].map(p=>x.rows.some(z=>z.Pool===p)?`<span style="margin-right:10px">${esc(pl(p))}: <b>${x.rows.filter(z=>z.Pool===p).reduce((a,z)=>a+Number(z.OnHand),0)}</b></span>`:'').join('')}</div>`:''}</div>`; }).join('');
+    <div class="small" style="margin-top:4px">${x.rows.filter(z=>z.Size).map(z=>{ const q=st(Number(z.OnHand),Number(z.MinLevel||0)); return `<span style="display:inline-block;margin:2px 8px 2px 0;padding-left:6px;border-left:4px solid ${col[q]}">${esc(z.Size)}: <b>${esc(z.OnHand)}</b></span>`; }).join('')}${lau[n]?` · ${t('laundryL')}: ${lau[n]}`:''}</div></div>`; }).join('');
   const bars = names.map(n=>{ const x=g[n], s=st(x.tot,x.min); return `<div class="bar"><span class="n">${esc(n)}</span><span style="flex:1;position:relative;height:16px;background:#f1f1f1;border-radius:4px"><i style="width:${Math.max(1,x.tot/max*100)}%;background:${col[s]};height:16px"></i>${x.min?`<span style="position:absolute;top:-2px;bottom:-2px;left:${x.min/max*100}%;border-left:2px dashed #231f20"></span>`:''}</span><b>${x.tot}</b></div>`; }).join('');
   const tr = r.trend||[], tm = Math.max(1,...tr.map(d=>Math.max(d.out,d.inn))), W=300, H=90, bw=W/tr.length;
   const svg = `<svg viewBox="0 0 ${W} ${H+14}" width="100%" role="img">${tr.map((d,i)=>`<rect x="${i*bw+1}" y="${H-d.out/tm*H}" width="${bw/2-1}" height="${d.out/tm*H}" fill="#44a276"/><rect x="${i*bw+bw/2}" y="${H-d.inn/tm*H}" width="${bw/2-1}" height="${d.inn/tm*H}" fill="#aaaaaa"/>`).join('')}<line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="#aaaaaa"/><text x="0" y="${H+11}" font-size="8" fill="#6e6b6c">${esc((tr[0]||{}).d||'')}</text><text x="${W}" y="${H+11}" font-size="8" fill="#6e6b6c" text-anchor="end">${esc((tr[tr.length-1]||{}).d||'')}</text></svg>`;
@@ -704,7 +696,7 @@ function stockViz(r){
 }
 function stSizes(){ const s=($('si').selectedOptions[0].dataset.s||'').split(',').filter(Boolean); $('ss').innerHTML = s.length ? s.map(x=>`<option>${esc(x)}</option>`).join('') : '<option value="">–</option>'; }
 async function addStock(){
-  const r = await api({action:'stockAdd',pin:S.pin,pool:$('sp2').value,item:$('si').value,size:$('ss').value,qty:$('sq').value,minLevel:$('sm')?$('sm').value:'',reason:$('sr').value,ref:$('sf').value});
+  const r = await api({action:'stockAdd',pin:S.pin,item:$('si').value,size:$('ss').value,qty:$('sq').value,minLevel:$('sm')?$('sm').value:'',reason:$('sr').value,ref:$('sf').value});
   if(!r.ok) return $('msg').innerHTML='<div class="err">'+E(r)+'</div>'; vStock();
 }
 
