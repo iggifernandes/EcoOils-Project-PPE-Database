@@ -19,6 +19,9 @@ header .logo{height:44px;max-width:58%;object-fit:contain}
 .ptitle{max-width:780px;margin:0 auto;padding:26px 16px 14px;font-weight:300;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:var(--m)}
 
 
+.ptitle{position:relative}.ptitle::before{content:"";position:absolute;left:16px;right:16px;bottom:0;height:1px;background:var(--k)}.ptitle::after{content:"";position:absolute;left:16px;bottom:-3px;width:44px;height:7px;background:var(--g)}
+main,.tabs{position:relative;z-index:1}body::after{content:"";position:fixed;right:-22px;bottom:34px;width:150px;height:150px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='4' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3C/svg%3E") no-repeat center/contain;opacity:.3;pointer-events:none;z-index:0}
+.empty{text-align:center;padding:44px 16px;color:var(--m);font-weight:300;letter-spacing:.08em;text-transform:uppercase;font-size:15px}.empty::before{content:"";display:block;width:56px;height:56px;margin:0 auto 18px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='4' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='14' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='24' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='34' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='4' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='14' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='24' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='34' r='2.4' fill='%23aaaaaa'/%3E%3Ccircle cx='44' cy='44' r='2.4' fill='%23aaaaaa'/%3E%3C/svg%3E") no-repeat center/contain}
 main{max-width:780px;margin:0 auto;padding:18px 16px}
 .card{background:#fff;border:1px solid var(--l);border-radius:8px;padding:18px;margin-bottom:16px}
 .card.hl{outline:2px solid var(--y);outline-offset:2px}
@@ -66,8 +69,8 @@ footer{position:fixed;bottom:0;left:0;right:0;text-align:center;background:#fff;
 .hide{display:none}
 img.ph{max-width:100%;border-radius:6px;margin-top:6px}
 details>summary{min-height:32px}
-@media (max-width:420px){.ptitle{font-size:18px;letter-spacing:.1em}.row{grid-template-columns:1fr 64px 44px}.row .it{grid-column:1/-1}}
-@media print{header,.ptitle,.tabs,footer,.noprint{display:none!important}body{background:#fff;color:#000}}
+@media (max-width:420px){.tabs button{padding:0 8px;font-size:14px}.ptitle{font-size:18px;letter-spacing:.1em}.row{grid-template-columns:1fr 64px 44px}.row .it{grid-column:1/-1}}
+@media print{header,.ptitle,.tabs,footer,.noprint{display:none!important}body::after{display:none}body{background:#fff;color:#000}}
 </style>
 </head>
 <body>
@@ -79,7 +82,7 @@ details>summary{min-height:32px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.12.1';
+const VERSION = 'v2.13.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -360,7 +363,7 @@ async function submitReq(){
   $('pane').innerHTML = `<div class="card">${parts.map(pp=>`<div class="ok">${t(pp.auto?'sentAuto':'sent')}</div><p>${t('ref')}: <b>${esc(pp.id)}</b></p>`).join('')}<button class="p" onclick="eTab='mine';empInit()">${t('mine')}</button><button class="s" style="width:100%;margin-top:8px" onclick="eTab='care';empInit()">${t('careView')}</button></div>`;
 }
 async function mineView(){
-  const l = myList(); if(!l.length) return $('pane').innerHTML = `<div class="card small">${t('noReq')}</div>`;
+  const l = myList(); if(!l.length) return $('pane').innerHTML = `<div class="empty">${t('noReq')}</div>`;
   $('pane').innerHTML = '<div id="ml"></div>';
   const rs = await Promise.all(l.map(x=>api({action:'status',id:x.id,token:x.token}).then(r=>({r,x}))));
   $('ml').innerHTML = rs.filter(z=>z.r.ok).map(({r,x})=>`<div class="card"><b>${esc(r.id)}</b> <span class="pill ${r.status}">${esc(r.status)}</span>
@@ -540,7 +543,7 @@ async function loadQ(){ const r = await api({action:'queue',pin:S.pin}); if(!r.o
 async function vQueue(){
   $('pane').innerHTML = '…'; const q = await loadQ(); if(!q) return;
   const want = S.tab==='pending' ? 'Requested' : 'Approved'; const list = q.filter(x=>x.Status===want);
-  $('pane').innerHTML = list.length ? list.map(card).join('') : `<div class="card small">${t('none')}</div>`;
+  $('pane').innerHTML = list.length ? list.map(card).join('') : `<div class="empty">${t('none')}</div>`;
   if(S.hl){ const el = $('c_'+S.hl); if(el){ el.classList.add('hl'); el.scrollIntoView({block:'center'}); } }
 }
 function card(x){
@@ -689,7 +692,7 @@ async function vVisitors(){
    return `<div class="card" id="l_${esc(l.LoanID)}"><b>${esc(l.Visitors)}</b> <span class="small">· ${esc(l.VisitorCompany)}</span> ${emp?`<span class="pill Approved">${t('empLoan')}</span> `:''}${od?`<span class="pill Rejected">${t('overdue')}</span>`:''}<br><span class="small">${esc(l.LoanID)} · ${emp?t('dueL')+': '+fmt(l.Due):t('host')+': '+esc(l.HostName)} · ${fmt(l.CreatedAt)}</span>${/harness/i.test(l.Items)?`<div class="flag" style="margin-top:6px">${t('harnessNote')}</div>`:''}
    ${its.map((i,k)=>`<div style="display:flex;gap:8px;align-items:center;margin:4px 0"><span style="flex:1">${esc(i.item)}${i.size?' ('+esc(i.size)+')':''} × ${i.qty}</span><input type="number" min="0" max="${i.qty}" value="${i.qty}" class="rq" style="width:70px"></div>`).join('')}
    <label>${t('condL')}</label><select class="cd"><option value="Good">${t('c_Good')}</option><option value="Wash">${t('c_Wash')}</option><option value="Damaged">${t('c_Damaged')}</option></select>
-   <button class="p" onclick="retLoan('${esc(l.LoanID)}')">${t('retBtn')}</button><button class="d" style="width:100%;margin-top:8px" onclick="wOff('${esc(l.LoanID)}')">${t('writeOff')}</button><div class="m"></div></div>`; }).join('')||`<div class="card small">${t('none')}</div>`}
+   <button class="p" onclick="retLoan('${esc(l.LoanID)}')">${t('retBtn')}</button><button class="d" style="width:100%;margin-top:8px" onclick="wOff('${esc(l.LoanID)}')">${t('writeOff')}</button><div class="m"></div></div>`; }).join('')||`<div class="empty">${t('none')}</div>`}
   <h3 style="margin:14px 0 6px">${t('histL')}</h3>${done.map(l=>`<div class="rec small"><b>${esc(l.Visitors)}</b> · ${esc(itemsTxt(l.Items))} · ${esc(l.Status)} ${esc(l.Condition)} · ${esc(l.HostName)} · ${fmt(l.ReturnedAt||l.CreatedAt)}</div>`).join('')}`;
   addLRow();
 }
