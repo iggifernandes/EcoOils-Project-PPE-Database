@@ -8,7 +8,7 @@
 <style>
 :root{--g:#44a276;--y:#ffc600;--k:#231f20;--w:#ffffff;--gr:#aaaaaa;--g2:#ecf6f1;--y2:#fff6d6;--l:#dcdcdc;--m:#6e6b6c;--r:#b42318;--bg:#ffffff}
 *{box-sizing:border-box}
-body{margin:0;font-family:'Jost',system-ui,Arial,sans-serif;font-size:16px;line-height:1.45;background:var(--bg);color:var(--k);padding-bottom:52px}
+body{margin:0;font-family:'Shell Font','ShellFont','Shell',Jost,system-ui,Arial,sans-serif;font-size:16px;line-height:1.45;background:var(--bg);color:var(--k);padding-bottom:52px}
 header{background:#fff;color:var(--k);padding:10px 16px 6px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid var(--l)}
 header .logo{height:44px;max-width:58%;object-fit:contain}
 .hr{display:flex;flex-direction:column;align-items:flex-end;gap:0}
@@ -16,9 +16,9 @@ header .logo{height:44px;max-width:58%;object-fit:contain}
 .lang{display:flex}
 .lang button{background:none;color:var(--m);border:0;border-bottom:3px solid transparent;border-radius:0;min-width:44px;min-height:44px;padding:0 8px;margin:0;font-size:15px;letter-spacing:.06em;cursor:pointer}
 .lang button.on{color:var(--k);font-weight:600;border-bottom-color:var(--g)}
-.ptitle{max-width:780px;margin:0 auto;padding:26px 92px 22px 16px;position:relative;font-weight:300;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:var(--m);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 40'%3E%3Ccircle cx='4' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Crect x='50' y='14' width='8' height='26' fill='%2344a276'/%3E%3Crect x='66' y='3' width='8' height='37' fill='%23ffc600'/%3E%3C/svg%3E") no-repeat right 16px center/64px 32px}
-.ptitle::before{content:"";position:absolute;left:16px;right:16px;bottom:0;height:1px;background:var(--k)}
-.ptitle::after{content:"";position:absolute;left:16px;bottom:-3px;width:44px;height:7px;background:var(--g)}
+.ptitle{max-width:780px;margin:0 auto;padding:26px 16px 14px;font-weight:300;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:var(--m)}
+
+
 main{max-width:780px;margin:0 auto;padding:18px 16px}
 .card{background:#fff;border:1px solid var(--l);border-radius:8px;padding:18px;margin-bottom:16px}
 .card.hl{outline:2px solid var(--y);outline-offset:2px}
@@ -66,7 +66,7 @@ footer{position:fixed;bottom:0;left:0;right:0;text-align:center;background:#fff;
 .hide{display:none}
 img.ph{max-width:100%;border-radius:6px;margin-top:6px}
 details>summary{min-height:32px}
-@media (max-width:420px){.ptitle{padding-right:84px;font-size:18px;letter-spacing:.1em;background-size:52px 26px}.row{grid-template-columns:1fr 64px 44px}.row .it{grid-column:1/-1}}
+@media (max-width:420px){.ptitle{font-size:18px;letter-spacing:.1em}.row{grid-template-columns:1fr 64px 44px}.row .it{grid-column:1/-1}}
 @media print{header,.ptitle,.tabs,footer,.noprint{display:none!important}body{background:#fff;color:#000}}
 </style>
 </head>
@@ -79,7 +79,7 @@ details>summary{min-height:32px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.12.0';
+const VERSION = 'v2.12.1';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
