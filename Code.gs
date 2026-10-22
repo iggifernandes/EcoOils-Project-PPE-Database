@@ -1,7 +1,7 @@
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
- * VERSION 2.11.0
+ * VERSION 2.14.0
  *
  * Flow: Employee requests (app / QR)  ->  Approver approves  ->  employee gets OTP by email
  *       ->  Storekeeper enters OTP at the counter and issues  ->  receipt emailed + stock deducted + audit trail.
