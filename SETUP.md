@@ -116,10 +116,20 @@ Use your PERSONAL Gmail for steps 1–4 (not the work email).
 • **Both recipients start with Active = No, so no report email is sent until you switch them on.** When you are ready, set Active = Yes in the Recipients sheet (Darren, Satish). Nothing else needs to change.
 • To test Darren's report: set him Yes, then Apps Script > run `monthlyProjectReport`.
 
+## What is new in v2.11.0 – staff login by email, no PINs
+
+• **No PINs anymore.** Approvers and storekeepers log in with their **work email** and a **6-digit one-time code** that is emailed to them.
+  1. Open the staff address (`...?mode=staff`, or press Ctrl+Alt+M on the employee screen).
+  2. Type your email, tap "Send me a login code".
+  3. Type the code from the email (valid 10 minutes, 5 tries). You stay logged in for 6 hours.
+• **Who can log in:** only people in the **Users** sheet with Active = Yes and their **Email** filled in. The PIN column is no longer used (leave it empty). To add a storekeeper: add a row (Name, Role = store, Active = Yes, Email, Pool = All). To remove access: Active = No (takes effect immediately).
+• **Safety:** the app never says whether an email exists; a code can be asked 5 times an hour per email; 5 wrong tries cancels the code.
+• If a session ends the app asks for a new code. If the Apps Script cache is ever cleared, everyone simply logs in again.
+
 ## Upgrade steps (Action needed)
 
-1. Apps Script: replace Code.gs, Save, run `setup`, then run `loadTeamUsers`. Deploy > Manage deployments > edit > New version > Deploy.
-2. Users sheet: replace every `CHANGE-ME` PIN. Give each person their PIN privately.
-3. Personnel sheet: mark the Project team `Project` in the Pool column (everyone else = Asset).
-4. Stock tab: upload Project stock and Asset stock separately.
-5. GitHub: upload the new index.html (exact name). Hard refresh (Ctrl+F5).
+1. Apps Script: replace Code.gs, Save, run `setup` and `loadTeamUsers` (fills Users with the 4 people and their emails), Deploy > Manage deployments > edit > New version > Deploy.
+2. Users sheet: check each person's Email is correct. No PINs to set.
+3. GitHub: replace index.html (exact name). Hard refresh (Ctrl+F5).
+4. Personnel sheet: paste the Personnel tab (emails, Pool = Project only for the Project team).
+5. Test: open the staff address, request a code for your own email, log in, open Admin.

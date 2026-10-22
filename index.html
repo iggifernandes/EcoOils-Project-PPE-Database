@@ -51,7 +51,7 @@ img.ph{max-width:100%;border-radius:8px;margin-top:6px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.10.2';
+const VERSION = 'v2.11.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -188,6 +188,12 @@ Object.assign(T.ms,{poolL:'Pool',p_Project:'Projek',p_Asset:'Aset',p_All:'Semua'
  singleAdd:'Tambah satu item',poolLoans:'Pinjaman pool (antara Projek dan Aset)',poolLoansNote:'Apabila satu pool kekurangan, stor boleh mengeluarkan dari pool lain. Direkodkan di sini. Bayar balik apabila stok baharu tiba – stok bergerak balik secara automatik.',repay:'Bayar balik',repayQty:'Berapa banyak dibayar balik?',leftL:'baki',lentBy:'dipinjamkan oleh',toL:'ke',noDebts:'Tiada pinjaman pool terbuka.',settled:'Selesai',
  borrowQ:'Stok dalam pool pemohon tidak mencukupi. Keluarkan dari pool lain dan rekod sebagai pinjaman pool untuk dibayar balik kemudian?',borrowedL:'Dipinjam dari pool lain',lendPool:'Ambil stok dari'});
 Object.assign(T.ms.ERR,{POOL_SHORT:'Stok dalam pool ini tidak mencukupi.',WRONG_POOL:'Permintaan ini milik pool lain – pelulus lain mengendalikannya.',BAD_LINE:'Semak baris muat naik ini.',ALREADY_SETTLED:'Sudah selesai.'});
+Object.assign(T.en,{emailStaff:'Your work email',sendCode:'Send me a login code',codeSentTo:'A 6-digit code was sent to',enterCode:'Enter the code',verify:'Log in',changeEmail:'Use another email',sessionEnded:'Your session ended. Please log in again.'});
+Object.assign(T.en.ERR,{BAD_EMAIL:'Enter a valid email.',BAD_CODE:'Wrong code.',CODE_EXPIRED:'The code expired. Ask for a new one.',LOCKED_TRY_LATER:'Too many tries. Please wait a while.',EMAIL_FAILED:'The email could not be sent. Try again.',SESSION_EXPIRED:'Your session ended. Please log in again.'});
+Object.assign(T.id,{emailStaff:'Email kerja Anda',sendCode:'Kirim kode masuk',codeSentTo:'Kode 6 digit dikirim ke',enterCode:'Masukkan kode',verify:'Masuk',changeEmail:'Pakai email lain',sessionEnded:'Sesi berakhir. Silakan masuk lagi.'});
+Object.assign(T.id.ERR,{BAD_EMAIL:'Masukkan email yang valid.',BAD_CODE:'Kode salah.',CODE_EXPIRED:'Kode kedaluwarsa. Minta kode baru.',LOCKED_TRY_LATER:'Terlalu banyak percobaan. Tunggu sebentar.',EMAIL_FAILED:'Email tidak dapat dikirim. Coba lagi.',SESSION_EXPIRED:'Sesi berakhir. Silakan masuk lagi.'});
+Object.assign(T.ms,{emailStaff:'E-mel kerja anda',sendCode:'Hantar kod log masuk',codeSentTo:'Kod 6 digit dihantar ke',enterCode:'Masukkan kod',verify:'Log masuk',changeEmail:'Guna e-mel lain',sessionEnded:'Sesi tamat. Sila log masuk semula.'});
+Object.assign(T.ms.ERR,{BAD_EMAIL:'Masukkan e-mel yang sah.',BAD_CODE:'Kod salah.',CODE_EXPIRED:'Kod tamat tempoh. Minta kod baharu.',LOCKED_TRY_LATER:'Terlalu banyak cubaan. Sila tunggu sebentar.',EMAIL_FAILED:'E-mel tidak dapat dihantar. Cuba lagi.',SESSION_EXPIRED:'Sesi tamat. Sila log masuk semula.'});
 const pl = p => t('p_'+(p==='Asset'?'Asset':'Project'));
 
 const qs = new URLSearchParams(location.search);
@@ -478,16 +484,23 @@ const PRE = (qs.get('code')||'').replace(/\D/g,'').slice(0,6);
 if(qs.get('code')){ try{ history.replaceState(null,'',location.pathname+'?mode=staff&req='+encodeURIComponent(qs.get('req')||'')); }catch(e){} }
 let S = {loanNames:[],pin:sessionStorage.getItem('ppe_pin')||'',role:sessionStorage.getItem('ppe_role')||'',name:sessionStorage.getItem('ppe_name')||'',pool:sessionStorage.getItem('ppe_pool')||'All',pv:'All',tab:'',q:[],recs:[],filt:'All',hl:qs.get('req')||''};
 function staffInit(){ if(!S.pin) return staffLogin(); staffShell(); }
-function staffLogin(){
-  $('app').innerHTML = `<div class="card"><label>${t('pin')}</label><input id="pinI" type="password" inputmode="numeric" autocomplete="current-password"><button class="p" onclick="doLogin()">${t('login')}</button><div id="msg"></div></div>`;
+function staffLogin(note){
+  $('app').innerHTML = `<div class="card">${note?`<div class="small" style="margin-bottom:8px">${esc(note)}</div>`:''}<label>${t('emailStaff')}</label><input id="emI" type="email" inputmode="email" autocomplete="username" value="${esc(S.email||'')}"><button class="p" id="scB" onclick="sendCode()">${t('sendCode')}</button><div id="msg"></div></div>`;
+}
+async function sendCode(){
+  const em = $('emI').value.trim(); S.email = em; $('scB').disabled = true;
+  const r = await api({action:'loginStart',email:em});
+  if(!r.ok){ $('scB').disabled=false; return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>'; }
+  $('app').innerHTML = `<div class="card"><div class="small">${t('codeSentTo')} <b>${esc(em)}</b></div><label>${t('enterCode')}</label><input id="cdI" class="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"><button class="p" id="vB" onclick="doLogin()">${t('verify')}</button><button class="s" style="margin-top:8px" onclick="staffLogin()">${t('changeEmail')}</button><div id="msg"></div></div>`;
+  $('cdI').focus();
 }
 async function doLogin(){
-  const p = $('pinI').value, r = await api({action:'login',pin:p});
+  const r = await api({action:'loginVerify',email:S.email,code:$('cdI').value.trim()});
   if(!r.ok) return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>';
-  S.pin=p; S.role=r.role; S.name=r.name; S.pool=r.pool||'All'; sessionStorage.setItem('ppe_pool',S.pool); sessionStorage.setItem('ppe_pin',p); sessionStorage.setItem('ppe_role',r.role); sessionStorage.setItem('ppe_name',r.name); S.tab=''; staffShell();
+  S.pin=r.token; S.role=r.role; S.name=r.name; S.pool=r.pool||'All'; sessionStorage.setItem('ppe_pool',S.pool); sessionStorage.setItem('ppe_pin',r.token); sessionStorage.setItem('ppe_role',r.role); sessionStorage.setItem('ppe_name',r.name); S.tab=''; staffShell();
 }
-function logout(){ ['ppe_pin','ppe_role','ppe_name'].forEach(k=>sessionStorage.removeItem(k)); S.pin=''; staffLogin(); }
-function bad(r){ if(r.error==='BAD_PIN'){ logout(); return true; } return false; }
+function logout(){ ['ppe_pin','ppe_role','ppe_name','ppe_pool'].forEach(k=>sessionStorage.removeItem(k)); S.pin=''; staffLogin(); }
+function bad(r){ if(r.error==='SESSION_EXPIRED'||r.error==='BAD_PIN'){ ['ppe_pin','ppe_role','ppe_name','ppe_pool'].forEach(k=>sessionStorage.removeItem(k)); S.pin=''; staffLogin(t('sessionEnded')); return true; } return false; }
 async function staffShell(){
   const A = S.role==='approver';
   const tabs = A ? [['pending','pending'],['collect','collect'],['visitors','visitors'],['records','records'],['stock','stock'],['reports','reports'],['training','trainStaff'],['admin','adminTab'],['qr','qr']] : [['collect','collect'],['visitors','visitors'],['stock','stock'],['records','records'],['training','trainStaff']];

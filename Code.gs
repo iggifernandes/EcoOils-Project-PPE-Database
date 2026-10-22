@@ -1,12 +1,12 @@
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
- * VERSION 2.10.3
+ * VERSION 2.11.0
  *
  * Flow: Employee requests (app / QR)  ->  Approver approves  ->  employee gets OTP by email
  *       ->  Storekeeper enters OTP at the counter and issues  ->  receipt emailed + stock deducted + audit trail.
  */
-const VERSION = '2.10.3';
+const VERSION = '2.11.0';
 const OTP_DAYS = 14;        // approved request must be collected within this many days
 const MAX_OTP_TRIES = 5;
 const MAX_OPEN_PER_PERSON = 3;
@@ -18,7 +18,7 @@ const SHEETS = {
   Items: ['Item', 'Category', 'Sizes', 'ServiceLifeDays', 'Kit', 'Loan', 'Approval'],
   Stock: ['Item', 'Size', 'OnHand', 'MinLevel', 'Pool'],
   StockLog: ['Timestamp', 'Item', 'Size', 'Change', 'Reason', 'Ref', 'Actor', 'Pool'],
-  Users: ['Name', 'Role', 'PIN', 'Active', 'Email', 'Pool'],
+  Users: ['Name', 'Role', 'PIN', 'Active', 'Email', 'Pool'],   // PIN is no longer used (login = email + emailed one-time code); the column is kept so old sheets still work
   Requests: ['ReqID', 'CreatedAt', 'PersonID', 'Name', 'Company', 'Email', 'Verified', 'Sponsor', 'Items', 'Reason', 'Remark',
     'PhotoId', 'Flags', 'Status', 'TokenHash', 'ApprovedBy', 'ApprovedAt', 'ApprovedItems', 'OtpHash', 'OtpExpires', 'Tries',
     'IssuedBy', 'IssuedAt', 'ReceiptCode', 'Note', 'Reminded', 'Pool'],
@@ -99,7 +99,7 @@ function setup() {
   ScriptApp.newTrigger('eveningChase').timeBased().everyDays(1).atHour(17).create();
 }
 
-/* Run once (or any time): adds / updates the team in Users WITHOUT touching existing PINs. New people get a CHANGE-ME PIN – replace it in the sheet. */
+/* Run once (or any time): adds / updates the team in Users. Staff log in with their EMAIL + a one-time code that is emailed to them (no PINs). */
 const TEAM = [
   ['Iggy', 'approver', 'Ignatius.Ambrosio@ecooils.com.my', 'Project'],
   ['Irfan', 'approver', 'irfan.amin@ecooils.co.id', 'Asset'],
@@ -113,7 +113,7 @@ function loadTeamUsers() {
     let row = 0;
     for (let i = 1; i < v.length; i++) if (String(v[i][eIdx]).toLowerCase() === m[2].toLowerCase() || String(v[i][nIdx]) === m[0] || (k === 2 && String(v[i][nIdx]) === 'Store 1')) { row = i + 1; break; }
     const rowVals = { Name: m[0], Role: m[1], Active: 'Yes', Email: m[2], Pool: m[3] };
-    if (!row) { const nr = h.map(function (c) { return c === 'PIN' ? 'CHANGE-ME-' + (k + 1) : (rowVals[c] !== undefined ? rowVals[c] : ''); }); sh.appendRow(nr); }
+    if (!row) { const nr = h.map(function (c) { return c === 'PIN' ? '' : (rowVals[c] !== undefined ? rowVals[c] : ''); }); sh.appendRow(nr); }
     else Object.keys(rowVals).forEach(function (c) { sh.getRange(row, v[0].indexOf(c) + 1).setValue(rowVals[c]); });
   });
 }
@@ -138,8 +138,10 @@ function doPost(e) {
       case 'status': return json_(status_(p));
       case 'cancel': return json_(cancel_(p));
       case 'trainDone': return json_(trainDone_(p));
+      case 'loginStart': return json_(loginStart_(p));
+      case 'loginVerify': return json_(loginVerify_(p));
     }
-    // ---- staff (PIN) ----
+    // ---- staff (session token from the emailed-code login; sent in the field 'pin') ----
     const u = auth_(p.pin);
     if (!u.ok) return json_(u);
     const isA = u.role === 'approver';
@@ -220,14 +222,54 @@ function approverMail_(pool, subject, body) {
   const to = rows_('Users').filter(function (x) { return String(x.Role).toLowerCase() === 'approver' && String(x.Active).toLowerCase() !== 'no' && x.Email && (userPool_(x.Pool) === 'All' || userPool_(x.Pool) === pool_(pool)); }).map(function (x) { return x.Email; });
   try { mail_(to.length ? to.join(',') : prop_('ADMIN_EMAIL'), subject, body); } catch (e) { }
 }
-function auth_(pin) {
-  const c = CacheService.getScriptCache(), f = Number(c.get('pinfails') || 0);
-  if (f >= 15) return { ok: false, error: 'LOCKED_TRY_LATER' };
-  const u = rows_('Users').filter(function (x) { return String(x.Active).toLowerCase() !== 'no' && String(x.PIN) === String(pin) && pin; })[0];
-  if (!u) { c.put('pinfails', String(f + 1), 600); return { ok: false, error: 'BAD_PIN' }; }
-  if (/^CHANGE-ME/i.test(String(u.PIN))) return { ok: false, error: 'CHANGE_PIN' };   // seeded default PIN must be replaced in the Users sheet before anyone can log in
-  c.remove('pinfails');
-  return { ok: true, name: u.Name, role: String(u.Role).toLowerCase() === 'approver' ? 'approver' : 'store', pool: String(u.Role).toLowerCase() === 'approver' ? userPool_(u.Pool) : 'All' };
+/* ---- Staff login: email + one-time code (no PINs). ----
+ * 1) loginStart: staff types their email -> a 6-digit code is emailed (valid 10 min). The reply is always "ok" so nobody can test which emails exist.
+ * 2) loginVerify: staff types the code -> a random session token (valid 6 hours) is returned; the app sends it with every staff call. */
+const LOGIN_CODE_MIN = 10, SESSION_SEC = 21600, LOGIN_MAX_TRIES = 5;
+function userByEmail_(em) {
+  em = String(em || '').trim().toLowerCase(); if (!em) return null;
+  return rows_('Users').filter(function (x) { return String(x.Active).toLowerCase() !== 'no' && String(x.Email).trim().toLowerCase() === em; })[0] || null;
+}
+function userInfo_(u) {
+  const a = String(u.Role).toLowerCase() === 'approver';
+  return { ok: true, name: u.Name, role: a ? 'approver' : 'store', pool: a ? userPool_(u.Pool) : 'All' };
+}
+function loginStart_(p) {
+  const em = String(p.email || '').trim().toLowerCase(), c = CacheService.getScriptCache();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 80) return { ok: false, error: 'BAD_EMAIL' };
+  const key = hash_('em|' + em), n = Number(c.get('lq_' + key) || 0), g = Number(c.get('lq_all') || 0);
+  if (n >= 5 || g >= 60) return { ok: false, error: 'LOCKED_TRY_LATER' };
+  c.put('lq_' + key, String(n + 1), 3600); c.put('lq_all', String(g + 1), 3600);
+  const u = userByEmail_(em);
+  if (u) {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    c.put('lc_' + key, hash_('code|' + em + '|' + code), LOGIN_CODE_MIN * 60); c.remove('lt_' + key);
+    try { mail_(u.Email, 'PPE staff login code', tpl_('Staff login / Masuk staf / Log masuk kakitangan',
+      '<p>Dear ' + esc_(u.Name) + ',</p><p>Your login code / Kode masuk / Kod log masuk:</p>' +
+      '<p style="font-size:36px;letter-spacing:8px;text-align:center;font-weight:bold;color:#0b5d3b;background:#e8f3ee;padding:12px;border-radius:8px">' + code + '</p>' +
+      '<p style="font-size:13px;color:#555">Valid ' + LOGIN_CODE_MIN + ' minutes. Do not share it. If you did not ask for it, ignore this email. / Berlaku ' + LOGIN_CODE_MIN + ' menit. Jangan dibagikan. / Sah ' + LOGIN_CODE_MIN + ' minit. Jangan kongsi.</p>')); }
+    catch (e) { return { ok: false, error: 'EMAIL_FAILED' }; }
+  }
+  return { ok: true };
+}
+function loginVerify_(p) {
+  const em = String(p.email || '').trim().toLowerCase(), code = String(p.code || '').trim(), c = CacheService.getScriptCache(), key = hash_('em|' + em);
+  const want = c.get('lc_' + key), t = Number(c.get('lt_' + key) || 0);
+  if (!want) return { ok: false, error: 'CODE_EXPIRED' };
+  if (t >= LOGIN_MAX_TRIES) { c.remove('lc_' + key); return { ok: false, error: 'LOCKED_TRY_LATER' }; }
+  if (hash_('code|' + em + '|' + code) !== want) { c.put('lt_' + key, String(t + 1), LOGIN_CODE_MIN * 60); return { ok: false, error: 'BAD_CODE', left: LOGIN_MAX_TRIES - t - 1 }; }
+  const u = userByEmail_(em); if (!u) return { ok: false, error: 'BAD_CODE' };
+  c.remove('lc_' + key); c.remove('lt_' + key);
+  const token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  c.put('s_' + hash_('tok|' + token), em, SESSION_SEC);
+  audit_('LOGIN', 'STAFF_LOGIN', u.Name, em);
+  const o = userInfo_(u); o.token = token; o.version = VERSION; return o;
+}
+function auth_(token) {
+  const c = CacheService.getScriptCache(), em = token ? c.get('s_' + hash_('tok|' + String(token))) : null;
+  const u = em ? userByEmail_(em) : null;
+  if (!u) return { ok: false, error: 'SESSION_EXPIRED' };
+  return userInfo_(u);
 }
 function itemsText_(items) {
   return items.map(function (i) { return i.qty + ' x ' + i.item + (i.size ? ' (' + i.size + ')' : ''); }).join(', ');
