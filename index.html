@@ -4,42 +4,70 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PPE Request & Issue – EcoOils Mentari</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--g:#0b5d3b;--g2:#e8f3ee;--r:#b42318;--o:#b54708;--l:#d0d5dd;--m:#667085;--bg:#f6f7f8}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:#1a1a1a;padding-bottom:48px}
-header{background:#fff;color:#1a1a1a;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:3px solid var(--g)}
-header .logo{height:44px;max-width:60%;object-fit:contain}.hr{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.ver{font-size:11px;color:var(--m)}
-.ptitle{background:var(--g);color:#fff;padding:8px 16px;font-size:15px;font-weight:700}
-header h1{font-size:16px;margin:0}.lang button{background:#fff;color:var(--g);border:1px solid var(--g);border-radius:6px;padding:4px 10px;margin-left:4px;cursor:pointer}
-.lang button.on{background:var(--g);color:#fff;font-weight:700}
-main{max-width:780px;margin:0 auto;padding:14px}
-.card{background:#fff;border:1px solid var(--l);border-radius:10px;padding:14px;margin-bottom:12px}
-.card.hl{outline:3px solid #f79009}
-label{display:block;font-size:13px;color:var(--m);margin:10px 0 4px}
-input,select,textarea{width:100%;padding:11px;border:1px solid var(--l);border-radius:8px;font-size:16px;background:#fff}
-button{font-family:inherit;cursor:pointer}
-button.p{background:var(--g);color:#fff;border:0;border-radius:8px;padding:13px;font-size:16px;font-weight:700;width:100%;margin-top:12px}
-button.s{background:#fff;color:var(--g);border:1px solid var(--g);border-radius:8px;padding:9px 12px;font-size:14px}
-button.d{background:#fff;color:var(--r);border:1px solid var(--r);border-radius:8px;padding:9px 12px;font-size:14px}
-button:disabled{opacity:.5}
-.tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}.tabs button{flex:1 0 auto;padding:10px 12px;border:1px solid var(--l);background:#fff;border-radius:8px;font-size:14px;white-space:nowrap}
-.tabs button.on{background:var(--g);color:#fff;border-color:var(--g)}
-.row{display:grid;grid-template-columns:2fr 1fr 64px 34px;gap:6px;margin-bottom:6px}
-.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700}
-.Requested{background:#fef0c7;color:var(--o)}.Approved{background:#d1e9ff;color:#175cd3}.Issued{background:#d1fadf;color:#027a48}.Rejected,.Voided,.Cancelled{background:#fee4e2;color:var(--r)}.Expired{background:#eaecf0;color:var(--m)}
-.err{background:#fee4e2;color:var(--r);padding:10px;border-radius:8px;margin-top:10px}.ok{background:#d1fadf;color:#027a48;padding:10px;border-radius:8px;margin-top:10px}
-.flag.inf{background:#d1e9ff;color:#175cd3}
-.flag{background:#fee4e2;color:var(--r);padding:4px 8px;border-radius:6px;font-size:13px;margin:3px 0;display:block}
-.small{font-size:13px;color:var(--m)}.rec{border-top:1px solid var(--l);padding:10px 0}.rec:first-child{border-top:0}
-.items{background:var(--g2);padding:8px 10px;border-radius:8px;margin:8px 0;font-weight:600}
-.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin-bottom:10px}.sum div{background:#fff;border:1px solid var(--l);border-radius:8px;text-align:center;padding:8px 2px;font-size:12px;color:var(--m)}.sum b{display:block;font-size:20px;color:#1a1a1a}
-.bar{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}.bar span.n{width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar i{display:block;height:14px;background:var(--g);border-radius:4px}.bar b{font-size:12px}
-table{width:100%;border-collapse:collapse;font-size:14px}td,th{border-bottom:1px solid var(--l);padding:6px 4px;text-align:left}tr.low td{background:#fee4e2}
-.otp{font-size:34px;letter-spacing:8px;text-align:center}
-footer{position:fixed;bottom:0;left:0;right:0;text-align:center;background:#fff;border-top:1px solid var(--l);padding:8px;font-size:12px;color:var(--m)}
+:root{--g:#44a276;--y:#ffc600;--k:#231f20;--w:#ffffff;--gr:#aaaaaa;--g2:#ecf6f1;--y2:#fff6d6;--l:#dcdcdc;--m:#6e6b6c;--r:#b42318;--bg:#ffffff}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Jost',system-ui,Arial,sans-serif;font-size:16px;line-height:1.45;background:var(--bg);color:var(--k);padding-bottom:52px}
+header{background:#fff;color:var(--k);padding:10px 16px 6px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid var(--l)}
+header .logo{height:44px;max-width:58%;object-fit:contain}
+.hr{display:flex;flex-direction:column;align-items:flex-end;gap:0}
+.ver{font-size:12px;letter-spacing:.08em;color:var(--m);line-height:1.2;padding-top:2px}
+.lang{display:flex}
+.lang button{background:none;color:var(--m);border:0;border-bottom:3px solid transparent;border-radius:0;min-width:44px;min-height:44px;padding:0 8px;margin:0;font-size:15px;letter-spacing:.06em;cursor:pointer}
+.lang button.on{color:var(--k);font-weight:600;border-bottom-color:var(--g)}
+.ptitle{max-width:780px;margin:0 auto;padding:26px 92px 22px 16px;position:relative;font-weight:300;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:var(--m);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 40'%3E%3Ccircle cx='4' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='4' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='12' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='20' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='28' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='4' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='12' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='20' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='28' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Ccircle cx='36' cy='36' r='1.9' fill='%23aaaaaa'/%3E%3Crect x='50' y='14' width='8' height='26' fill='%2344a276'/%3E%3Crect x='66' y='3' width='8' height='37' fill='%23ffc600'/%3E%3C/svg%3E") no-repeat right 16px center/64px 32px}
+.ptitle::before{content:"";position:absolute;left:16px;right:16px;bottom:0;height:1px;background:var(--k)}
+.ptitle::after{content:"";position:absolute;left:16px;bottom:-3px;width:44px;height:7px;background:var(--g)}
+main{max-width:780px;margin:0 auto;padding:18px 16px}
+.card{background:#fff;border:1px solid var(--l);border-radius:8px;padding:18px;margin-bottom:16px}
+.card.hl{outline:2px solid var(--y);outline-offset:2px}
+h2,h3{font-weight:400;letter-spacing:.06em}
+label{display:block;font-size:14px;color:var(--m);margin:14px 0 4px}
+input,select,textarea{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--gr);border-radius:6px;font-family:inherit;font-size:16px;color:var(--k);background:#fff}
+input[type=checkbox],input[type=radio]{width:auto;min-height:0}
+button{font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--k);outline-offset:2px}
+button.p{background:var(--g);color:var(--k);border:1px solid var(--g);border-radius:6px;min-height:48px;padding:12px;font-size:17px;font-weight:600;letter-spacing:.04em;width:100%;margin-top:16px}
+button.p:hover{background:#3c9068}
+button.s{background:#fff;color:var(--k);border:1px solid var(--k);border-radius:6px;min-height:44px;padding:8px 14px;font-size:15px}
+button.s:hover{background:var(--g2)}
+button.d{background:#fff;color:var(--k);border:1px solid var(--gr);border-radius:6px;min-height:44px;padding:8px 14px;font-size:15px}
+button.d:hover{border-color:var(--k)}
+button:disabled{opacity:.45;cursor:default}
+.tabs{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--l)}
+.tabs button{flex:0 0 auto;min-height:44px;padding:0 12px;border:0;border-bottom:3px solid transparent;background:none;border-radius:0;font-size:15px;white-space:nowrap;color:var(--m)}
+.tabs button.on{color:var(--k);font-weight:600;border-bottom-color:var(--g)}
+.row{display:grid;grid-template-columns:2fr 1fr 64px 44px;gap:8px;margin-bottom:8px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border:1px solid var(--l);border-radius:99px;background:#fff;color:var(--k);font-size:13px}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gr)}
+.pill.Requested::before{background:var(--y)}.pill.Approved::before,.pill.Issued::before{background:var(--g)}
+.pill.Rejected::before,.pill.Voided::before,.pill.Cancelled::before,.pill.Expired::before{background:var(--gr)}
+.err{background:#fff;border:1px solid var(--l);border-left:4px solid var(--r);color:var(--r);padding:10px 12px;border-radius:6px;margin-top:12px;font-size:15px}
+.ok{background:var(--g2);color:var(--k);border-left:4px solid var(--g);padding:10px 12px;border-radius:6px;margin-top:12px}
+.flag{background:var(--y2);color:var(--k);border-left:4px solid var(--y);padding:6px 10px;border-radius:4px;font-size:14px;margin:6px 0;display:block}
+.flag.inf{background:#f3f3f3;border-left-color:var(--gr)}
+.small{font-size:14px;color:var(--m)}
+.rec{border-top:1px solid var(--l);padding:12px 0}.rec:first-child{border-top:0}
+.items{background:var(--g2);padding:10px 12px;border-radius:6px;margin:10px 0;font-weight:500}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin-bottom:16px}
+.sum div{background:#fff;border:1px solid var(--l);border-radius:6px;text-align:center;padding:12px 4px;font-size:13px;color:var(--m)}
+.sum b{display:block;font-size:24px;font-weight:400;color:var(--k)}
+.bar{display:flex;align-items:center;gap:8px;font-size:14px;margin:6px 0}
+.bar span.n{width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar i{display:block;height:12px;background:var(--g);border-radius:2px}
+.bar b{font-size:13px;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{border-bottom:1px solid var(--l);padding:8px 4px;text-align:left}
+th{font-weight:500;color:var(--m);font-size:13px;letter-spacing:.04em}
+tr.low td{background:var(--y2)}
+.otp{font-size:34px;letter-spacing:10px;text-align:center;font-weight:500}
+footer{position:fixed;bottom:0;left:0;right:0;text-align:center;background:#fff;border-top:1px solid var(--l);padding:10px;font-size:12px;letter-spacing:.08em;color:var(--m)}
 .hide{display:none}
-img.ph{max-width:100%;border-radius:8px;margin-top:6px}
-@media print{header,.tabs,footer,.noprint{display:none!important}body{background:#fff}}
+img.ph{max-width:100%;border-radius:6px;margin-top:6px}
+details>summary{min-height:32px}
+@media (max-width:420px){.ptitle{padding-right:84px;font-size:18px;letter-spacing:.1em;background-size:52px 26px}.row{grid-template-columns:1fr 64px 44px}.row .it{grid-column:1/-1}}
+@media print{header,.ptitle,.tabs,footer,.noprint{display:none!important}body{background:#fff;color:#000}}
 </style>
 </head>
 <body>
@@ -51,7 +79,7 @@ img.ph{max-width:100%;border-radius:8px;margin-top:6px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.11.0';
+const VERSION = 'v2.12.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -66,7 +94,7 @@ en:{ttl:'PPE Request & Issue',newReq:'New request',mine:'My requests',company:'D
  pin:'PIN',login:'Log in',logout:'Log out',pending:'Approvals',collect:'Store issue',records:'Records',stock:'Stock',reports:'Reports',qr:'QR poster',
  approve:'Approve',reject:'Reject',rejWhy:'Reason for rejecting?',voidWhy:'Reason for voiding?',void:'Void',viewPhoto:'View photo',history:'Past issues',
  otp:'6-digit code from employee',issue:'Issue PPE',issued:'Issued. Receipt',none:'Nothing here.',expires:'Collect before',by:'Approved by',
- f_NOT_IN_REGISTER:'⚠ Not in personnel register – details typed by the employee',f_SPONSORED:'⚠ Sponsored – code goes to sponsor: ',f_ID_CHECK:'⚠ ID check required at store',f_EARLY_REISSUE:'⚠ Early re-issue: ',f_LOST:'⚠ Reported lost',f_LOST_NOT_REPORTED:'⚠ Not yet reported to Head of Facility',f_DAMAGED:'⚠ Reported damaged',
+ f_NOT_IN_REGISTER:'Not in personnel register – details typed by the employee',f_SPONSORED:'Sponsored – code goes to sponsor: ',f_ID_CHECK:'ID check required at store',f_EARLY_REISSUE:'Early re-issue: ',f_LOST:'Reported lost',f_LOST_NOT_REPORTED:'Not yet reported to Head of Facility',f_DAMAGED:'Reported damaged',
  all:'All',search:'Search name / ID / company',csv:'Export CSV',onhand:'On hand',min:'Min level',addStock:'Add / correct stock',itm:'Item',reasonTxt:'Reason / note',save:'Save',
  print:'Print poster',scan:'Scan to request PPE',scanId:'Imbas untuk meminta APD',avgA:'Avg approval (h)',avgC:'Avg collection (h)',byMonth:'Issued per month (qty)',byItem:'By item',byCo:'By company',lowS:'Low stock',
  ERR:{SPONSOR_REQUIRED:'Choose a sponsor.',SPONSOR_LIMIT:'This sponsor already has 5 open requests. Choose another.',ID_CHECK_REQUIRED:'Tick that you checked the ID.',HOST_REQUIRED:'Choose a host.',NOTHING_RETURNED:'Nothing marked as returned.',BAD_PIN:'Wrong PIN',LOCKED_TRY_LATER:'Too many tries. Wait 10 min.',NO_ITEMS:'Add at least one item (with size).',PHOTO_REQUIRED:'Photo required for damaged PPE.',PERSON_HAS_NO_EMAIL:'No email on file for you. Contact HSSE.',PERSON_NOT_FOUND:'Person not found.',DETAILS_REQUIRED:'Fill all details with a valid email.',TOO_MANY_OPEN:'You already have 3 open requests.',DUPLICATE_OPEN:'You already have an open request for',BAD_PHOTO:'Photo could not be read.',BAD_OTP:'Wrong code.',LOCKED:'Too many wrong codes. Void and ask for a new request.',EXPIRED:'Approval expired.',STOCK_LOW:'Not enough stock:',REASON_REQUIRED:'Reason is required.',EMAIL_FAILED:'Email to employee failed – not approved.',NOT_ALLOWED:'Not allowed for your role.',BAD_INPUT:'Check the input.',NETWORK:'Network error. Try again.',INVALID_LINK:'Invalid link.',CANNOT_CANCEL:'Cannot cancel now.'}},
@@ -81,7 +109,7 @@ id:{ttl:'Permintaan & Penyerahan APD',newReq:'Permintaan baru',mine:'Permintaan 
  pin:'PIN',login:'Masuk',logout:'Keluar',pending:'Persetujuan',collect:'Gudang APD',records:'Catatan',stock:'Stok',reports:'Laporan',qr:'Poster QR',
  approve:'Setujui',reject:'Tolak',rejWhy:'Alasan menolak?',voidWhy:'Alasan pembatalan?',void:'Batalkan',viewPhoto:'Lihat foto',history:'Riwayat',
  otp:'Kode 6 digit dari karyawan',issue:'Serahkan APD',issued:'Diserahkan. Bukti',none:'Kosong.',expires:'Ambil sebelum',by:'Disetujui oleh',
- f_NOT_IN_REGISTER:'⚠ Tidak ada di daftar personel – data diisi sendiri',f_SPONSORED:'⚠ Disponsori – kode ke sponsor: ',f_ID_CHECK:'⚠ Wajib cek ID di gudang',f_EARLY_REISSUE:'⚠ Penggantian terlalu cepat: ',f_LOST:'⚠ Dilaporkan hilang',f_LOST_NOT_REPORTED:'⚠ Belum dilaporkan ke Head of Facility',f_DAMAGED:'⚠ Dilaporkan rusak',
+ f_NOT_IN_REGISTER:'Tidak ada di daftar personel – data diisi sendiri',f_SPONSORED:'Disponsori – kode ke sponsor: ',f_ID_CHECK:'Wajib cek ID di gudang',f_EARLY_REISSUE:'Penggantian terlalu cepat: ',f_LOST:'Dilaporkan hilang',f_LOST_NOT_REPORTED:'Belum dilaporkan ke Head of Facility',f_DAMAGED:'Dilaporkan rusak',
  all:'Semua',search:'Cari nama / ID / perusahaan',csv:'Ekspor CSV',onhand:'Stok',min:'Batas min',addStock:'Tambah / koreksi stok',itm:'Item',reasonTxt:'Alasan / catatan',save:'Simpan',
  print:'Cetak poster',scan:'Scan to request PPE',scanId:'Imbas untuk meminta APD',avgA:'Rata-rata persetujuan (jam)',avgC:'Rata-rata pengambilan (jam)',byMonth:'Diserahkan per bulan (jml)',byItem:'Per item',byCo:'Per perusahaan',lowS:'Stok rendah',
  ERR:{SPONSOR_REQUIRED:'Pilih sponsor.',SPONSOR_LIMIT:'Sponsor ini sudah punya 5 permintaan terbuka. Pilih yang lain.',ID_CHECK_REQUIRED:'Centang bahwa ID sudah diperiksa.',HOST_REQUIRED:'Pilih host.',NOTHING_RETURNED:'Tidak ada yang dikembalikan.',BAD_PIN:'PIN salah',LOCKED_TRY_LATER:'Terlalu banyak percobaan. Tunggu 10 menit.',NO_ITEMS:'Tambahkan minimal satu item (dengan ukuran).',PHOTO_REQUIRED:'Foto wajib untuk APD rusak.',PERSON_HAS_NO_EMAIL:'Email Anda belum terdaftar. Hubungi HSSE.',PERSON_NOT_FOUND:'Personel tidak ditemukan.',DETAILS_REQUIRED:'Isi semua data dengan email valid.',TOO_MANY_OPEN:'Anda sudah punya 3 permintaan terbuka.',DUPLICATE_OPEN:'Anda sudah punya permintaan terbuka untuk',BAD_PHOTO:'Foto tidak terbaca.',BAD_OTP:'Kode salah.',LOCKED:'Terlalu banyak kode salah. Batalkan dan minta permintaan baru.',EXPIRED:'Persetujuan kedaluwarsa.',STOCK_LOW:'Stok tidak cukup:',REASON_REQUIRED:'Alasan wajib diisi.',EMAIL_FAILED:'Email ke karyawan gagal – tidak disetujui.',NOT_ALLOWED:'Tidak diizinkan untuk peran Anda.',BAD_INPUT:'Periksa input.',NETWORK:'Kesalahan jaringan. Coba lagi.',INVALID_LINK:'Tautan tidak valid.',CANNOT_CANCEL:'Tidak bisa dibatalkan.'}}
@@ -93,7 +121,7 @@ Object.assign(T.en,{trainTab:'Training',trainStaff:'Training',
  splitNote:'Your request will be split: ★ items get a pass code at once, the others go to HSSE for approval.',
  s_ApprovedAuto:'Ready – check your email for your pass code, then go to the PPE store',
  passTitle:'Your PPE pass',passHow:'Show this at the PPE store. The storekeeper scans the QR or types the code.',passWarn:'Do not share this code. It can be used once.',passBad:'This pass link is not valid.',
- f_AUTO:'Self-service item – no approval needed',f_ALREADY_ON_LOAN:'⚠ Already holds this on loan: ',
+ f_AUTO:'Self-service item – no approval needed',f_ALREADY_ON_LOAN:'Already holds this on loan: ',
  loanBanner:'LOAN – this item is lent, not given. Tell the person it must be returned to the store. Inspect it before handing over.',
  harnessNote:'Harness: if it stopped a fall or is damaged, choose Damaged. It is not restocked and must be inspected by a competent person before any reuse.',
  empLoan:'Employee loan',dueL:'Due',
@@ -110,7 +138,7 @@ Object.assign(T.id,{trainTab:'Pelatihan',trainStaff:'Pelatihan',
  splitNote:'Permintaan Anda akan dipisah: item ★ langsung mendapat kode pass, sisanya diajukan ke HSSE untuk persetujuan.',
  s_ApprovedAuto:'Siap – cek email untuk kode pass, lalu ke gudang APD',
  passTitle:'Pass APD Anda',passHow:'Tunjukkan ini di gudang APD. Petugas gudang memindai QR atau mengetik kode.',passWarn:'Jangan bagikan kode ini. Hanya bisa dipakai sekali.',passBad:'Tautan pass tidak valid.',
- f_AUTO:'Item layanan mandiri – tanpa persetujuan',f_ALREADY_ON_LOAN:'⚠ Masih meminjam item ini: ',
+ f_AUTO:'Item layanan mandiri – tanpa persetujuan',f_ALREADY_ON_LOAN:'Masih meminjam item ini: ',
  loanBanner:'PINJAMAN – item ini dipinjamkan, bukan diberikan. Beritahu bahwa wajib dikembalikan ke gudang. Periksa sebelum diserahkan.',
  harnessNote:'Harness: jika pernah menahan jatuh atau rusak, pilih Rusak. Tidak dimasukkan kembali ke stok dan harus diperiksa orang kompeten sebelum dipakai lagi.',
  empLoan:'Pinjaman karyawan',dueL:'Jatuh tempo',
@@ -137,13 +165,13 @@ T.ms={ttl:'Permintaan & Pengeluaran PPE',newReq:'Permintaan baharu',mine:'Permin
  pin:'PIN',login:'Log masuk',logout:'Log keluar',pending:'Kelulusan',collect:'Stor PPE',records:'Rekod',stock:'Stok',reports:'Laporan',qr:'Poster QR',
  approve:'Luluskan',reject:'Tolak',rejWhy:'Sebab menolak?',voidWhy:'Sebab pembatalan?',void:'Batalkan',viewPhoto:'Lihat foto',history:'Pengeluaran lepas',
  otp:'Kod 6 digit daripada pekerja',issue:'Keluarkan PPE',issued:'Dikeluarkan. Resit',none:'Tiada apa-apa di sini.',expires:'Ambil sebelum',by:'Diluluskan oleh',
- f_NOT_IN_REGISTER:'⚠ Tiada dalam daftar kakitangan – butiran ditaip oleh pekerja',f_SPONSORED:'⚠ Ditaja – kod dihantar kepada penaja: ',f_ID_CHECK:'⚠ Semakan ID diperlukan di stor',f_NEW_EMAIL:'⚠ E-mel dimasukkan sendiri oleh pekerja baharu – akan ditambah ke daftar selepas pengeluaran',f_EARLY_REISSUE:'⚠ Penggantian terlalu awal: ',f_LOST:'⚠ Dilaporkan hilang',f_LOST_NOT_REPORTED:'⚠ Belum dilaporkan kepada Head of Facility',f_DAMAGED:'⚠ Dilaporkan rosak',
+ f_NOT_IN_REGISTER:'Tiada dalam daftar kakitangan – butiran ditaip oleh pekerja',f_SPONSORED:'Ditaja – kod dihantar kepada penaja: ',f_ID_CHECK:'Semakan ID diperlukan di stor',f_NEW_EMAIL:'E-mel dimasukkan sendiri oleh pekerja baharu – akan ditambah ke daftar selepas pengeluaran',f_EARLY_REISSUE:'Penggantian terlalu awal: ',f_LOST:'Dilaporkan hilang',f_LOST_NOT_REPORTED:'Belum dilaporkan kepada Head of Facility',f_DAMAGED:'Dilaporkan rosak',
  all:'Semua',search:'Cari nama / ID / syarikat',csv:'Eksport CSV',onhand:'Dalam stok',min:'Tahap min',addStock:'Tambah / betulkan stok',itm:'Item',reasonTxt:'Sebab / catatan',save:'Simpan',
  print:'Cetak poster',scan:'Scan to request PPE',scanId:'Imbas untuk meminta APD',scanMs:'Imbas untuk memohon PPE',avgA:'Purata kelulusan (jam)',avgC:'Purata pengambilan (jam)',byMonth:'Dikeluarkan setiap bulan (kuantiti)',byItem:'Mengikut item',byCo:'Mengikut syarikat',lowS:'Stok rendah',
  emailL:'E-mel anda sendiri (kod dihantar ke sini)',newEmailNote:'Pekerja baharu: masukkan e-mel anda sendiri. Kod dihantar ke sana dan anda menunjukkan ID di stor. Selepas pengeluaran yang betul anda ditambah ke daftar secara automatik. Belum ada e-mel? Pilih penaja.',noEmailSpon:'Belum ada e-mel? Pilih penaja',
  ERR:{SPONSOR_REQUIRED:'Pilih penaja.',SPONSOR_LIMIT:'Penaja ini sudah ada 5 permintaan terbuka. Pilih yang lain.',ID_CHECK_REQUIRED:'Tandakan bahawa ID telah disemak.',HOST_REQUIRED:'Pilih hos.',NOTHING_RETURNED:'Tiada apa ditandakan sebagai dipulangkan.',BAD_PIN:'PIN salah',LOCKED_TRY_LATER:'Terlalu banyak cubaan. Tunggu 10 minit.',NO_ITEMS:'Tambah sekurang-kurangnya satu item (dengan saiz).',PHOTO_REQUIRED:'Foto diperlukan untuk PPE rosak.',PERSON_HAS_NO_EMAIL:'Tiada e-mel dalam rekod anda. Hubungi HSSE.',PERSON_NOT_FOUND:'Individu tidak ditemui.',DETAILS_REQUIRED:'Isi semua butiran.',TOO_MANY_OPEN:'Anda sudah ada 3 permintaan terbuka.',DUPLICATE_OPEN:'Anda sudah ada permintaan terbuka untuk',BAD_PHOTO:'Foto tidak dapat dibaca.',BAD_OTP:'Kod salah.',LOCKED:'Terlalu banyak kod salah. Batalkan dan minta permintaan baharu.',EXPIRED:'Kelulusan tamat tempoh.',STOCK_LOW:'Stok tidak mencukupi:',REASON_REQUIRED:'Sebab diperlukan.',EMAIL_FAILED:'E-mel kepada pekerja gagal – tidak diluluskan.',NOT_ALLOWED:'Tidak dibenarkan untuk peranan anda.',BAD_INPUT:'Semak input.',NETWORK:'Ralat rangkaian. Cuba lagi.',INVALID_LINK:'Pautan tidak sah.',CANNOT_CANCEL:'Tidak boleh dibatalkan sekarang.',AUTO_QTY:'Maksimum 10 setiap baris untuk item tanpa kelulusan.',BAD_EMAIL:'Masukkan e-mel yang sah.',EMAIL_IN_USE:'E-mel ini sudah dimiliki seseorang dalam daftar – pilih nama anda daripada senarai.'}};
-Object.assign(T.en,{f_NEW_EMAIL:'⚠ Email typed by the new joiner – added to the register after issue'});
-Object.assign(T.id,{f_NEW_EMAIL:'⚠ Email diketik sendiri oleh karyawan baru – ditambahkan ke daftar setelah penyerahan'});
+Object.assign(T.en,{f_NEW_EMAIL:'Email typed by the new joiner – added to the register after issue'});
+Object.assign(T.id,{f_NEW_EMAIL:'Email diketik sendiri oleh karyawan baru – ditambahkan ke daftar setelah penyerahan'});
 Object.assign(T.ms,{trainTab:'Latihan',trainStaff:'Latihan',
  sentAuto:'Direkodkan. Item ini tidak memerlukan kelulusan – kod pas telah dihantar melalui e-mel. Tunjukkannya (atau kod QR) di stor PPE.',
  mkFree:'★ = tanpa kelulusan, kod pas melalui e-mel serta-merta',mkLoan:'↺ = pinjaman daripada stor, pulangkan selepas digunakan',
@@ -151,7 +179,7 @@ Object.assign(T.ms,{trainTab:'Latihan',trainStaff:'Latihan',
  splitNote:'Permintaan anda akan dipecahkan: item ★ mendapat kod pas serta-merta, selebihnya dihantar kepada HSSE untuk kelulusan.',
  s_ApprovedAuto:'Sedia – semak e-mel untuk kod pas anda, kemudian ke stor PPE',
  passTitle:'Pas PPE anda',passHow:'Tunjukkan ini di stor PPE. Pengurus stor mengimbas kod QR atau menaip kod.',passWarn:'Jangan kongsi kod ini. Ia hanya boleh digunakan sekali.',passBad:'Pautan pas ini tidak sah.',
- f_AUTO:'Item layan diri – tanpa kelulusan',f_ALREADY_ON_LOAN:'⚠ Sudah memegang item ini secara pinjaman: ',
+ f_AUTO:'Item layan diri – tanpa kelulusan',f_ALREADY_ON_LOAN:'Sudah memegang item ini secara pinjaman: ',
  loanBanner:'PINJAMAN – item ini dipinjamkan, bukan diberi. Beritahu bahawa ia mesti dipulangkan ke stor. Periksa sebelum diserahkan.',
  harnessNote:'Harness: jika ia pernah menahan jatuhan atau rosak, pilih Rosak. Ia tidak dimasukkan semula ke stok dan mesti diperiksa orang berkecekapan sebelum digunakan semula.',
  empLoan:'Pinjaman pekerja',dueL:'Tarikh akhir',
@@ -265,15 +293,15 @@ function catOf(n){ return catalog.find(c=>c.Item===n)||{}; }
 function isFree(n){ return String(catOf(n).Approval).toLowerCase()==='no'; }
 function isLoanIt(n){ return String(catOf(n).Loan)==='Always'; }
 function mk(i){ return (String(i.Approval).toLowerCase()==='no'?' ★':'')+(String(i.Loan)==='Always'?' ↺':''); }
-function itemHint(n){ if(!n) return ''; return (isFree(n)?`<div class="small" style="color:#175cd3;margin:2px 0">★ ${t('hFree')}</div>`:'')+(isLoanIt(n)?`<div class="small" style="color:#b54708;margin:2px 0">↺ ${t('hLoan')}</div>`:''); }
-function splitNote(){ const its=readItems(), f=its.filter(i=>isFree(i.item)).length, p=its.length-f; $('splitnote').innerHTML = (f&&p)?`<div class="small" style="background:#d1e9ff;border-radius:8px;padding:8px;margin-top:6px">${t('splitNote')}</div>`:''; }
+function itemHint(n){ if(!n) return ''; return (isFree(n)?`<div class="small" style="color:#231f20;margin:2px 0">★ ${t('hFree')}</div>`:'')+(isLoanIt(n)?`<div class="small" style="color:#231f20;margin:2px 0">↺ ${t('hLoan')}</div>`:''); }
+function splitNote(){ const its=readItems(), f=its.filter(i=>isFree(i.item)).length, p=its.length-f; $('splitnote').innerHTML = (f&&p)?`<div class="small" style="background:#f3f3f3;border-radius:8px;padding:8px;margin-top:6px">${t('splitNote')}</div>`:''; }
 function careBlock(k){ const c=CARE[k]; if(!c) return ''; return `<b>${esc(c.t[L])}</b><ul style="margin:6px 0 0;padding-left:18px;font-size:14px">${c.i[L].map(x=>`<li style="margin-bottom:4px">${esc(x)}</li>`).join('')}</ul>`; }
 function careDetails(itemName){ const k=careKey(itemName); return k?`<details style="margin:2px 0 8px"><summary class="small" style="cursor:pointer;color:var(--g)">${t('careTips')} – ${esc(CARE[k].t[L])}</summary><div class="small" style="background:var(--g2);border-radius:8px;padding:8px 10px;margin-top:4px">${careBlock(k)}</div></details>`:''; }
 function careView(){
   $('pane').innerHTML = `<div class="card"><b>${t('careTitle')}</b><p class="small">${t('careIntro')}</p></div>` + Object.keys(CARE).map(k=>`<details class="card"><summary style="cursor:pointer"><b>${esc(CARE[k].t[L])}</b></summary><div style="margin-top:8px">${careBlock(k)}</div></details>`).join('');
 }
 function careRow(sel){ const w=sel.closest('.rw'); if(!w) return; const c=w.querySelector('.care'); c.innerHTML = itemHint(sel.value)+(sel.value?careDetails(sel.value):''); if($('splitnote')) splitNote(); }
-function repNote(){ const r=$('rsn').value; $('rnote').innerHTML = r.startsWith('Replacement')?`<div class="small" style="background:#fef0c7;border-radius:8px;padding:8px;margin-top:6px">${t('repNote')}</div>`:''; $('fac').classList.toggle('hide',r!=='Lost'); }
+function repNote(){ const r=$('rsn').value; $('rnote').innerHTML = r.startsWith('Replacement')?`<div class="small" style="background:#fff6d6;border-radius:8px;padding:8px;margin-top:6px">${t('repNote')}</div>`:''; $('fac').classList.toggle('hide',r!=='Lost'); }
 async function empInit(){
   $('app').innerHTML = `<div class="tabs"><button id="tN" onclick="eTab='new';empInit()">${t('newReq')}</button><button id="tM" onclick="eTab='mine';empInit()">${t('mine')}</button><button id="tC" onclick="eTab='care';empInit()">${t('careTab')}</button><button id="tT" onclick="eTab='train';empInit()">${t('trainTab')}</button></div><div id="pane"></div>`;
   $('tN').className = eTab==='new'?'on':''; $('tM').className = eTab==='mine'?'on':''; $('tC').className = eTab==='care'?'on':''; $('tT').className = eTab==='train'?'on':'';
@@ -293,7 +321,7 @@ function formView(){
   <div id="spon" class="hide"><div class="small" style="margin-top:8px">${t('noEmailSpon')}. ${t('sponsorNote')}</div><label>${t('sponsor')}</label><select id="sc" onchange="sponNames()"><option value="">${t('company')}…</option>${[...new Set(people.filter(p=>p.Sponsor).map(p=>p.Company))].sort().map(c=>`<option>${esc(c)}</option>`).join('')}</select><select id="sp" style="margin-top:6px"><option value="">${t('select')}</option></select></div>
   <label>${t('items')}</label><div id="rows"></div><div class="small" style="margin:4px 0">${t('mkFree')} · ${t('mkLoan')}</div><button class="s" onclick="addRow()">${t('add')}</button> <button class="s" onclick="addKit()">${t('kit')}</button><div id="splitnote"></div>
   <label>${t('reason')}</label><select id="rsn" onchange="repNote()">${REASONS.map(r=>`<option value="${r}">${t('R_'+r.replace('-','_'))}</option>`).join('')}</select>
-  <div id="rnote"></div><div id="fac" class="hide"><div class="small" style="background:#fef0c7;border-radius:8px;padding:8px;margin-top:6px">${t('lostNote')}</div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="fr" style="width:auto"> ${t('facRep')}</label><input id="fn" placeholder="${t('facName')}"></div>
+  <div id="rnote"></div><div id="fac" class="hide"><div class="small" style="background:#fff6d6;border-radius:8px;padding:8px;margin-top:6px">${t('lostNote')}</div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="fr" style="width:auto"> ${t('facRep')}</label><input id="fn" placeholder="${t('facName')}"></div>
   <label>${t('remark')}</label><textarea id="rm" rows="2"></textarea>
   <button class="p" id="go" onclick="submitReq()">${t('submit')}</button><div id="msg"></div></div>`;
   addRow();
@@ -448,7 +476,7 @@ function trainView(){
     else body = `<${s.ol?'ol':'ul'} style="margin:0;padding-left:20px;font-size:14px">${s[L].map(x=>`<li style="margin-bottom:6px">${esc(x)}</li>`).join('')}</${s.ol?'ol':'ul'}>`;
     return `<details class="card" ${i===0?'open':''}><summary style="cursor:pointer"><b>${esc(s.t[L])}</b></summary><div style="margin-top:8px">${body}</div></details>`;
   }).join('');
-  const quiz = TR_QUIZ.map((q,i)=>`<div class="rec"><b>${i+1}. ${esc(q.q[L])}</b>${q.o[L].map((o,k)=>`<label style="display:flex;gap:8px;align-items:flex-start;color:#1a1a1a;margin:6px 0"><input type="radio" name="q${i}" value="${k}" style="width:auto;margin-top:4px"> <span>${esc(o)}</span></label>`).join('')}<div id="qe${i}" class="small"></div></div>`).join('');
+  const quiz = TR_QUIZ.map((q,i)=>`<div class="rec"><b>${i+1}. ${esc(q.q[L])}</b>${q.o[L].map((o,k)=>`<label style="display:flex;gap:8px;align-items:flex-start;color:#231f20;margin:6px 0"><input type="radio" name="q${i}" value="${k}" style="width:auto;margin-top:4px"> <span>${esc(o)}</span></label>`).join('')}<div id="qe${i}" class="small"></div></div>`).join('');
   $('pane').innerHTML = `<div class="card"><b>${t('trTitle')}</b><p class="small">${t('trIntro')}</p><div class="small">${t('trSrc')}</div><button class="s noprint" style="margin-top:8px" onclick="document.querySelectorAll('#pane details').forEach(d=>d.open=true);window.print()">${t('trPrint')}</button></div>${sec}
   <div class="card"><b>${t('trQuiz')}</b>${quiz}<button class="p" onclick="gradeQuiz()">${t('trCheck')}</button><div id="qres"></div></div><div id="trrec"></div>`;
 }
@@ -457,7 +485,7 @@ function gradeQuiz(){
   let sc=0, all=true;
   TR_QUIZ.forEach((q,i)=>{ const v=document.querySelector(`input[name=q${i}]:checked`); if(!v) all=false; });
   if(!all) return $('qres').innerHTML = `<div class="err">${t('trAll')}</div>`;
-  TR_QUIZ.forEach((q,i)=>{ const v=Number(document.querySelector(`input[name=q${i}]:checked`).value), ok=v===q.a; if(ok) sc++; $('qe'+i).innerHTML = `<span style="color:${ok?'#027a48':'#b42318'}"><b>${t(ok?'trRight':'trWrong')}.</b></span> ${esc(q.e[L])}`; });
+  TR_QUIZ.forEach((q,i)=>{ const v=Number(document.querySelector(`input[name=q${i}]:checked`).value), ok=v===q.a; if(ok) sc++; $('qe'+i).innerHTML = `<span style="color:${ok?'#231f20':'#b42318'}"><b>${t(ok?'trRight':'trWrong')}.</b></span> ${esc(q.e[L])}`; });
   TQ = {score:sc,total:TR_QUIZ.length};
   const pass = sc/TR_QUIZ.length >= 0.8;
   $('qres').innerHTML = `<div class="${pass?'ok':'err'}">${t('trScore')}: <b>${sc}/${TR_QUIZ.length}</b> – ${pass?t('trPass'):t('trRetry')}</div>`;
@@ -517,7 +545,7 @@ async function vQueue(){
 }
 function card(x){
   const A = S.role==='approver', its = JSON.parse(x.ApprovedItems || x.Items);
-  let h = `<div class="card" id="c_${esc(x.ReqID)}"><b>${esc(x.Name)}</b> <span class="small">· ${esc(x.Company)}</span> <span class="pill ${x.Status}">${esc(x.Status)}</span> <span class="pill" style="background:#e8f3ee;color:#0b5d3b">${esc(pl(x.Pool))}</span><br><span class="small">${esc(x.ReqID)} · ${fmt(x.CreatedAt)} · ${esc(x.Reason)}</span>${flagsHtml(x.Flags)}`;
+  let h = `<div class="card" id="c_${esc(x.ReqID)}"><b>${esc(x.Name)}</b> <span class="small">· ${esc(x.Company)}</span> <span class="pill ${x.Status}">${esc(x.Status)}</span> <span class="pill" style="background:#ecf6f1;color:#231f20">${esc(pl(x.Pool))}</span><br><span class="small">${esc(x.ReqID)} · ${fmt(x.CreatedAt)} · ${esc(x.Reason)}</span>${flagsHtml(x.Flags)}`;
   if(x.Status==='Requested'){
     h += `<div class="items" id="it_${esc(x.ReqID)}">${its.map((i,k)=>`<div style="display:flex;gap:8px;align-items:center;margin:3px 0" data-item="${esc(i.item)}" data-size="${esc(i.size)}"><span style="flex:1">${esc(i.item)}${i.size?' ('+esc(i.size)+')':''}</span><input type="number" min="0" max="20" value="${i.qty}" style="width:70px"></div>`).join('')}</div>`;
     if(x.Remark) h += `<div class="small">“${esc(x.Remark)}”</div>`;
@@ -525,7 +553,7 @@ function card(x){
     <div style="display:flex;gap:8px;margin-top:10px"><button class="p" style="margin:0" onclick="approve('${esc(x.ReqID)}')">${t('approve')}</button><button class="d" style="flex:0 0 35%" onclick="rejectReq('${esc(x.ReqID)}')">${t('reject')}</button></div><div id="m_${esc(x.ReqID)}"></div>`;
   } else {
     h += `<div class="items">${esc(itemsTxt(its))}</div><div class="small">${t('by')}: ${esc(x.ApprovedBy)} · ${fmt(x.ApprovedAt)} · ${t('expires')}: ${fmt(x.OtpExpires)}</div>
-    ${(x.Sponsor||String(x.Flags||'').includes('ID_CHECK'))?`<label style="display:flex;gap:8px;align-items:center;color:#b42318"><input type="checkbox" id="k_${esc(x.ReqID)}" style="width:auto"> ${t('idOk')}${x.Sponsor?` (${t('sponsorL')}: ${esc(x.Sponsor)})`:''}</label>`:''}${String(x.Reason).startsWith('Replacement')&&its.some(i=>needsRet(i.item))?`<div class="small" style="background:#fef0c7;border-radius:8px;padding:8px;margin-top:8px"><b>${t('oldRet')}</b> ${t('repNote')}<select id="ro_${esc(x.ReqID)}" style="margin-top:6px"><option value="">${t('select')}</option><option value="Yes">${t('oldYes')}</option><option value="No">${t('oldNo')}</option></select><input id="rn_${esc(x.ReqID)}" placeholder="${t('oldNote')}" style="margin-top:6px"></div>`:''}
+    ${(x.Sponsor||String(x.Flags||'').includes('ID_CHECK'))?`<label style="display:flex;gap:8px;align-items:center;color:#231f20"><input type="checkbox" id="k_${esc(x.ReqID)}" style="width:auto"> ${t('idOk')}${x.Sponsor?` (${t('sponsorL')}: ${esc(x.Sponsor)})`:''}</label>`:''}${String(x.Reason).startsWith('Replacement')&&its.some(i=>needsRet(i.item))?`<div class="small" style="background:#fff6d6;border-radius:8px;padding:8px;margin-top:8px"><b>${t('oldRet')}</b> ${t('repNote')}<select id="ro_${esc(x.ReqID)}" style="margin-top:6px"><option value="">${t('select')}</option><option value="Yes">${t('oldYes')}</option><option value="No">${t('oldNo')}</option></select><input id="rn_${esc(x.ReqID)}" placeholder="${t('oldNote')}" style="margin-top:6px"></div>`:''}
     ${its.some(i=>S.loanNames.includes(i.item))?`<div class="flag" style="margin-top:8px"><b>${t('loanBanner')}</b></div>`:''}${[...new Set(its.map(i=>i.item))].map(careDetails).join('')}<label>${t('otp')}</label><input id="o_${esc(x.ReqID)}" inputmode="numeric" maxlength="6" placeholder="••••••" class="otp" value="${S.hl===x.ReqID?esc(PRE):''}">
     <button class="p" id="b_${esc(x.ReqID)}" onclick="issue('${esc(x.ReqID)}')">${t('issue')}</button><div id="m_${esc(x.ReqID)}"></div>
     ${S.role==='approver'?`<button class="d" style="margin-top:8px" onclick="voidReq('${esc(x.ReqID)}')">${t('void')}</button>`:''}`;
@@ -603,19 +631,19 @@ async function setAppr(item,sel){ const r = await api({action:'itemApproval',pin
 function stockViz(r){
   const g = {}, lau = {};
   r.stock.forEach(s=>{ if(/\(Laundry\)$/.test(s.Size)){ lau[s.Item]=(lau[s.Item]||0)+Number(s.OnHand); return; } (g[s.Item]=g[s.Item]||{tot:0,min:0,rows:[]}); g[s.Item].tot+=Number(s.OnHand); g[s.Item].min+=Number(s.MinLevel||0); g[s.Item].rows.push(s); });
-  const st = (v,m)=> v<=0?'out':(m&&v<=m?'low':'ok'), col = {out:'#b42318',low:'#f79009',ok:'#0b5d3b'};
+  const st = (v,m)=> v<=0?'out':(m&&v<=m?'low':'ok'), col = {out:'#231f20',low:'#ffc600',ok:'#44a276'};
   const names = Object.keys(g).sort(), max = Math.max(1,...names.map(n=>Math.max(g[n].tot,g[n].min)));
   const untracked = r.items.filter(i=>!g[i.Item]).map(i=>i.Item);
   const cards = names.map(n=>{ const x=g[n], s=st(x.tot,x.min); return `<div style="border:1px solid var(--l);border-radius:8px;padding:8px 10px;margin:6px 0;border-left:6px solid ${col[s]}">
-    <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(n)}</b><span><b style="font-size:18px">${x.tot}</b> <span class="pill" style="background:${col[s]}22;color:${col[s]}">${t(s==='ok'?'inStock':s==='low'?'lowS2':'outS')}</span></span></div>
-    <div class="small" style="margin-top:4px">${x.rows.filter(z=>z.Size).map(z=>{ const q=st(Number(z.OnHand),Number(z.MinLevel||0)); return `<span style="display:inline-block;margin:2px 6px 2px 0;color:${col[q]}">${esc(z.Size)}: <b>${esc(z.OnHand)}</b></span>`; }).join('')}${lau[n]?` · ${t('laundryL')}: ${lau[n]}`:''}</div>${['Project','Asset'].some(p=>x.rows.some(z=>z.Pool===p))?`<div class="small" style="margin-top:2px">${['Project','Asset'].map(p=>x.rows.some(z=>z.Pool===p)?`<span style="margin-right:10px">${esc(pl(p))}: <b>${x.rows.filter(z=>z.Pool===p).reduce((a,z)=>a+Number(z.OnHand),0)}</b></span>`:'').join('')}</div>`:''}</div>`; }).join('');
-  const bars = names.map(n=>{ const x=g[n], s=st(x.tot,x.min); return `<div class="bar"><span class="n">${esc(n)}</span><span style="flex:1;position:relative;height:16px;background:#eef0f2;border-radius:4px"><i style="width:${Math.max(1,x.tot/max*100)}%;background:${col[s]};height:16px"></i>${x.min?`<span style="position:absolute;top:-2px;bottom:-2px;left:${x.min/max*100}%;border-left:2px dashed #1a1a1a"></span>`:''}</span><b>${x.tot}</b></div>`; }).join('');
+    <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(n)}</b><span><b style="font-size:18px">${x.tot}</b> <span class="pill" style="border-color:${col[s]}">${t(s==='ok'?'inStock':s==='low'?'lowS2':'outS')}</span></span></div>
+    <div class="small" style="margin-top:4px">${x.rows.filter(z=>z.Size).map(z=>{ const q=st(Number(z.OnHand),Number(z.MinLevel||0)); return `<span style="display:inline-block;margin:2px 8px 2px 0;padding-left:6px;border-left:4px solid ${col[q]}">${esc(z.Size)}: <b>${esc(z.OnHand)}</b></span>`; }).join('')}${lau[n]?` · ${t('laundryL')}: ${lau[n]}`:''}</div>${['Project','Asset'].some(p=>x.rows.some(z=>z.Pool===p))?`<div class="small" style="margin-top:2px">${['Project','Asset'].map(p=>x.rows.some(z=>z.Pool===p)?`<span style="margin-right:10px">${esc(pl(p))}: <b>${x.rows.filter(z=>z.Pool===p).reduce((a,z)=>a+Number(z.OnHand),0)}</b></span>`:'').join('')}</div>`:''}</div>`; }).join('');
+  const bars = names.map(n=>{ const x=g[n], s=st(x.tot,x.min); return `<div class="bar"><span class="n">${esc(n)}</span><span style="flex:1;position:relative;height:16px;background:#f1f1f1;border-radius:4px"><i style="width:${Math.max(1,x.tot/max*100)}%;background:${col[s]};height:16px"></i>${x.min?`<span style="position:absolute;top:-2px;bottom:-2px;left:${x.min/max*100}%;border-left:2px dashed #231f20"></span>`:''}</span><b>${x.tot}</b></div>`; }).join('');
   const tr = r.trend||[], tm = Math.max(1,...tr.map(d=>Math.max(d.out,d.inn))), W=300, H=90, bw=W/tr.length;
-  const svg = `<svg viewBox="0 0 ${W} ${H+14}" width="100%" role="img">${tr.map((d,i)=>`<rect x="${i*bw+1}" y="${H-d.out/tm*H}" width="${bw/2-1}" height="${d.out/tm*H}" fill="#0b5d3b"/><rect x="${i*bw+bw/2}" y="${H-d.inn/tm*H}" width="${bw/2-1}" height="${d.inn/tm*H}" fill="#175cd3"/>`).join('')}<line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="#999"/><text x="0" y="${H+11}" font-size="8" fill="#667085">${esc((tr[0]||{}).d||'')}</text><text x="${W}" y="${H+11}" font-size="8" fill="#667085" text-anchor="end">${esc((tr[tr.length-1]||{}).d||'')}</text></svg>`;
-  const dem = (r.demand||[]).map(d=>{ const row=r.stock.find(s=>s.Item===d.item&&String(s.Size)===String(d.size)&&(!d.pool||s.Pool===d.pool)), have=row?Number(row.OnHand):null, short=have==null?null:Math.max(0,d.qty-have); return `<div class="rec small"><b>${esc(d.item)}${d.size?' ('+esc(d.size)+')':''}</b> × ${d.qty}${short>0?` <span style="color:#b42318"><b>${t('shortL')} ${short}</b></span>`:(have!=null?` <span style="color:#027a48">${t('covered')}</span>`:'')}<br>${esc(d.names.join(', '))}</div>`; }).join('');
+  const svg = `<svg viewBox="0 0 ${W} ${H+14}" width="100%" role="img">${tr.map((d,i)=>`<rect x="${i*bw+1}" y="${H-d.out/tm*H}" width="${bw/2-1}" height="${d.out/tm*H}" fill="#44a276"/><rect x="${i*bw+bw/2}" y="${H-d.inn/tm*H}" width="${bw/2-1}" height="${d.inn/tm*H}" fill="#aaaaaa"/>`).join('')}<line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="#aaaaaa"/><text x="0" y="${H+11}" font-size="8" fill="#6e6b6c">${esc((tr[0]||{}).d||'')}</text><text x="${W}" y="${H+11}" font-size="8" fill="#6e6b6c" text-anchor="end">${esc((tr[tr.length-1]||{}).d||'')}</text></svg>`;
+  const dem = (r.demand||[]).map(d=>{ const row=r.stock.find(s=>s.Item===d.item&&String(s.Size)===String(d.size)&&(!d.pool||s.Pool===d.pool)), have=row?Number(row.OnHand):null, short=have==null?null:Math.max(0,d.qty-have); return `<div class="rec small"><b>${esc(d.item)}${d.size?' ('+esc(d.size)+')':''}</b> × ${d.qty}${short>0?` <span style="color:#231f20"><b>${t('shortL')} ${short}</b></span>`:(have!=null?` <span style="color:#231f20">${t('covered')}</span>`:'')}<br>${esc(d.names.join(', '))}</div>`; }).join('');
   return `${dem?`<div class="card"><b>${t('demandT')}</b>${dem}</div>`:''}<div class="card"><b>${t('availT')}</b>${cards||`<div class="small">${t('none')}</div>`}${untracked.length?`<div class="small" style="margin-top:8px">${t('notTr')}: ${untracked.map(esc).join(', ')}</div>`:''}</div>
   <div class="card"><b>${t('chartT')}</b><div class="small">▮ ${t('onhand')} · ┆ ${t('min')}</div>${bars}</div>
-  <div class="card"><b>${t('trendT')}</b><div class="small"><span style="color:#0b5d3b">■</span> ${t('issuedL')} · <span style="color:#175cd3">■</span> ${t('recvL')}</div>${svg}</div>`;
+  <div class="card"><b>${t('trendT')}</b><div class="small"><span style="color:#44a276">■</span> ${t('issuedL')} · <span style="color:#aaaaaa">■</span> ${t('recvL')}</div>${svg}</div>`;
 }
 function stSizes(){ const s=($('si').selectedOptions[0].dataset.s||'').split(',').filter(Boolean); $('ss').innerHTML = s.length ? s.map(x=>`<option>${esc(x)}</option>`).join('') : '<option value="">–</option>'; }
 async function addStock(){
