@@ -82,7 +82,7 @@ details>summary{min-height:32px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.14.0';
+const VERSION = 'v2.14.1';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -671,7 +671,7 @@ async function vReports(){
 }
 
 function vQR(){
-  $('pane').innerHTML = `<div class="card" style="text-align:center"><h2 style="margin:4px 0">${esc(T.en.scan)}</h2><div>${esc(T.id.scanId)}</div><div>${esc(T.ms.scanMs)}</div><div id="qr" style="display:flex;justify-content:center;margin:16px"></div><div class="small">${esc(BASE)}</div><button class="p noprint" onclick="window.print()">${t('print')}</button></div>`;
+  $('pane').innerHTML = `<div class="card" style="text-align:center"><h2 style="margin:4px 0">${esc(T.en.scan)}</h2><div>${esc(T.id.scanId)}</div><div>${esc(T.ms.scanMs)}</div><div id="qr" style="display:flex;justify-content:center;margin:16px"></div><button class="p noprint" onclick="window.print()">${t('print')}</button></div>`;
   if(window.QRCode) new QRCode($('qr'),{text:BASE,width:260,height:260});
 }
 async function vTraining(){
