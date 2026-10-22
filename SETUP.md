@@ -155,3 +155,7 @@ Use your PERSONAL Gmail for steps 1–4 (not the work email).
 • Approver: Iggy only (owner). Irfan is switched off (Users row set Active = No by loadTeamUsers; the row stays). The Satish "IssueAsset" recipient is switched off. Store 1 and Store 2 stay.
 • If an item is short at issue, the store sees "not enough stock" and must receive stock first (delivery-order upload). There is no borrowing.
 • Old Asset rows (Stock, StockLog, Requests, Personnel) stay in the Sheet but are ignored everywhere. Delete them whenever you like. The old PoolDebt tab is no longer used.
+
+## v2.15.0 – request number email
+• The moment anyone submits a request, the requester gets an email with the request number (REQ-…), the items, and the status "waiting for HSSE approval" (for a sponsored worker it goes to the sponsor, naming the worker). Self-service items already send the code email, which now also shows the request number at the top.
+• Mail limit: a free Gmail account can send about 100 emails a day. Each approval-needed request now uses up to 4 (request received, approver notice, code, receipt).

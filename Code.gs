@@ -1,12 +1,12 @@
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
- * VERSION 2.14.0
+ * VERSION 2.15.0
  *
  * Flow: Employee requests (app / QR)  ->  Approver approves  ->  employee gets OTP by email
  *       ->  Storekeeper enters OTP at the counter and issues  ->  receipt emailed + stock deducted + audit trail.
  */
-const VERSION = '2.14.0';
+const VERSION = '2.15.0';
 const OTP_DAYS = 14;        // approved request must be collected within this many days
 const MAX_OTP_TRIES = 5;
 const MAX_OPEN_PER_PERSON = 3;
@@ -331,6 +331,17 @@ function catItem_(catalog, name) { return catalog.filter(function (x) { return x
 function isFree_(catalog, name) { const c = catItem_(catalog, name); return !!c && String(c.Approval).toLowerCase() === 'no'; }
 function isLoanItem_(catalog, name) { const c = catItem_(catalog, name); return !!c && String(c.Loan) === 'Always'; }
 
+/* Acknowledgement email sent the moment a request is made (needs approval): carries the request number. */
+function receivedMail_(o) {
+  mail_(o.to, 'PPE request received – ' + o.id + (o.forName ? ' for ' + o.forName : ''),
+    tpl_('PPE request received / Permintaan diterima',
+      '<p>Dear ' + esc_(o.dear) + ',</p><p>The PPE request' + (o.forName ? ' for <b>' + esc_(o.forName) + '</b>' : '') + ' has been received / Permintaan APD' + (o.forName ? ' untuk <b>' + esc_(o.forName) + '</b>' : '') + ' telah diterima / Permintaan PPE telah diterima.</p>' +
+      '<p style="font-size:13px;color:#555;margin-bottom:2px">Request number / Nomor permintaan / Nombor permintaan:</p>' +
+      '<p style="font-size:28px;letter-spacing:2px;text-align:center;font-weight:bold;color:#0b5d3b;background:#e8f3ee;padding:12px;border-radius:8px;margin-top:2px">' + esc_(o.id) + '</p>' +
+      '<p><b>' + esc_(o.items) + '</b><br>' + esc_(o.reason) + '</p>' +
+      '<p>Status: <b>Waiting for HSSE approval / Menunggu persetujuan HSSE / Menunggu kelulusan HSSE</b><br>You will receive a second email with your collection code once it is approved. / Anda akan menerima email kedua berisi kode pengambilan setelah disetujui. / Anda akan menerima e-mel kedua dengan kod pengambilan selepas diluluskan.</p>' +
+      '<p style="font-size:13px;color:#555">Keep this number for any follow-up. / Simpan nomor ini. / Simpan nombor ini.</p>'));
+}
 /* Collection-code email. Used for approved requests and for self-service (no-approval) requests. */
 function codeMail_(o) {
   const link = prop_('FRONTEND_URL') + '?pass=' + o.id + '#' + o.otp;
@@ -338,6 +349,7 @@ function codeMail_(o) {
     tpl_(o.auto ? 'PPE pass / Kode APD / Pas PPE' : 'PPE Approved / APD Disetujui / PPE Diluluskan',
       '<p>Dear ' + esc_(o.dear) + ',</p><p>' + (o.auto ? 'These items need no approval. Your request is recorded' + (o.forName ? ' for <b>' + esc_(o.forName) + '</b>' : '') + ' / Item ini tidak perlu persetujuan. Permintaan tercatat / Item ini tidak perlu kelulusan. Permintaan direkodkan:' :
         'The PPE request' + (o.forName ? ' for <b>' + esc_(o.forName) + '</b>' : '') + ' has been approved / Permintaan APD disetujui / Permintaan PPE diluluskan:') + '</p><p><b>' + esc_(o.items) + '</b></p>' +
+      '<p style="font-size:14px;margin-bottom:2px">Request number / Nomor permintaan / Nombor permintaan: <b>' + esc_(o.id) + '</b></p>' +
       '<p>Collection code at the PPE store / Kode pengambilan di gudang APD / Kod pengambilan di stor PPE:</p>' +
       '<p style="font-size:36px;letter-spacing:8px;text-align:center;font-weight:bold;color:#0b5d3b;background:#e8f3ee;padding:12px;border-radius:8px">' + o.otp + '</p>' +
       '<p style="text-align:center"><a href="' + link + '" style="background:#0b5d3b;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Open my QR pass / Buka QR pass</a><br><span style="font-size:12px;color:#555">Show the QR at the store – the storekeeper scans it. / Tunjukkan QR di gudang / Tunjukkan QR di stor.</span></p>' +
@@ -425,6 +437,7 @@ function submit_(p) {
         sh_('Requests').appendRow([id, new Date(), per.PersonID, per.Name, per.Company, notifyTo, verified, sponsor ? sponsor.Name : '', JSON.stringify(list),
           p.reason, remark, '', JSON.stringify(fl), 'Requested', hash_(token), '', '', '', '', '', 0, '', '', '', '', '', pool]);
         audit_(id, 'REQUESTED', per.Name, itemsText_(list) + ' | ' + p.reason + (fl.length ? ' | ' + fl.join(',') : ''));
+        try { receivedMail_({ to: notifyTo, id: id, dear: sponsor ? sponsor.Name : per.Name, forName: sponsor ? per.Name : '', items: itemsText_(list), reason: p.reason }); } catch (e) { }   // requester always gets the request number by email
         approverMail_(pool, 'PPE request [' + pool + '] – ' + per.Name + ' (' + id + ')', tpl_('New PPE request – ' + pool,
           '<p><b>' + esc_(per.Name) + '</b> · ' + esc_(per.Company) + (verified === 'No' ? ' <span style="color:#b42318">(NOT IN REGISTER)</span>' : '') + (sponsor ? '<br>Sponsor: ' + esc_(sponsor.Name) + ' – ID check at store' : '') + '</p>' +
           '<p><b>' + esc_(itemsText_(list)) + '</b><br>' + esc_(p.reason) + (fl.length ? '<br><span style="color:#b42318">⚠ ' + esc_(fl.join(', ')) + '</span>' : '') + '</p>' +
