@@ -133,3 +133,9 @@ Use your PERSONAL Gmail for steps 1–4 (not the work email).
 3. GitHub: replace index.html (exact name). Hard refresh (Ctrl+F5).
 4. Personnel sheet: paste the Personnel tab (emails, Pool = Project only for the Project team).
 5. Test: open the staff address, request a code for your own email, log in, open Admin.
+
+## v2.12.0 / page v2.14.0 – company email only, people add their own email
+• Only @ecooils.com.my and @ecooils.co.id addresses are accepted (staff login, new joiners, and people without an email on file). Other addresses show "Use your company email".
+• Personnel emails are NOT pre-loaded. A registered person with a blank Email types their own email on the request screen; the code goes there, the store ticks "ID checked", and after a correct issue the email is saved to the Personnel sheet (audit EMAIL_SAVED). Next time they just pick their name.
+• Workers with no company email still choose a sponsor.
+• To change the allowed domains edit EMAIL_DOMAINS near the top of the login section in Code.gs.

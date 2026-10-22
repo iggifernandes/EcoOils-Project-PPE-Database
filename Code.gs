@@ -6,7 +6,7 @@
  * Flow: Employee requests (app / QR)  ->  Approver approves  ->  employee gets OTP by email
  *       ->  Storekeeper enters OTP at the counter and issues  ->  receipt emailed + stock deducted + audit trail.
  */
-const VERSION = '2.11.0';
+const VERSION = '2.12.0';
 const OTP_DAYS = 14;        // approved request must be collected within this many days
 const MAX_OTP_TRIES = 5;
 const MAX_OPEN_PER_PERSON = 3;
@@ -234,9 +234,13 @@ function userInfo_(u) {
   const a = String(u.Role).toLowerCase() === 'approver';
   return { ok: true, name: u.Name, role: a ? 'approver' : 'store', pool: a ? userPool_(u.Pool) : 'All' };
 }
+const EMAIL_DOMAINS = ['ecooils.com.my', 'ecooils.co.id'];   // only company addresses are accepted
+function validEmail_(em) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) && em.length <= 80; }
+function okDomain_(em) { const d = String(em).split('@')[1] || ''; return EMAIL_DOMAINS.indexOf(d.toLowerCase()) >= 0; }
 function loginStart_(p) {
   const em = String(p.email || '').trim().toLowerCase(), c = CacheService.getScriptCache();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 80) return { ok: false, error: 'BAD_EMAIL' };
+  if (!validEmail_(em)) return { ok: false, error: 'BAD_EMAIL' };
+  if (!okDomain_(em)) return { ok: false, error: 'BAD_DOMAIN' };
   const key = hash_('em|' + em), n = Number(c.get('lq_' + key) || 0), g = Number(c.get('lq_all') || 0);
   if (n >= 5 || g >= 60) return { ok: false, error: 'LOCKED_TRY_LATER' };
   c.put('lq_' + key, String(n + 1), 3600); c.put('lq_all', String(g + 1), 3600);
@@ -336,6 +340,13 @@ function submit_(p) {
       per = rows_('Personnel').filter(function (x) { return String(x.PersonID) === String(p.personId) && String(x.Active).toLowerCase() !== 'no'; })[0];
       if (!per) return { ok: false, error: 'PERSON_NOT_FOUND' };
       pool = pool_(per.Pool);
+      const se = String(p.email || '').trim().toLowerCase();
+      if (!per.Email && se) {   // registered person with no email on file types their own: code goes there, ID checked at the store, saved to the register after a correct issue
+        if (!validEmail_(se)) return { ok: false, error: 'BAD_EMAIL' };
+        if (!okDomain_(se)) return { ok: false, error: 'BAD_DOMAIN' };
+        if (rows_('Personnel').some(function (x) { return String(x.Email).toLowerCase() === se; })) return { ok: false, error: 'EMAIL_IN_USE' };
+        per = Object.assign({}, per, { Email: se }); base.push('ID_CHECK'); base.push('SELF_EMAIL');
+      }
     } else {
       const nn = p.newPerson || {};
       if (!String(nn.name || '').trim() || !String(nn.company || '').trim()) return { ok: false, error: 'DETAILS_REQUIRED' };
@@ -343,7 +354,8 @@ function submit_(p) {
       verified = 'No'; base.push('NOT_IN_REGISTER'); pool = 'Asset';
       const em = String(nn.email || '').trim().toLowerCase();
       if (em) {   // new joiner enters own email: code goes there, ID is checked at the store, and they are added to the register after a correct issue
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 80) return { ok: false, error: 'BAD_EMAIL' };
+        if (!validEmail_(em)) return { ok: false, error: 'BAD_EMAIL' };
+        if (!okDomain_(em)) return { ok: false, error: 'BAD_DOMAIN' };
         if (rows_('Personnel').some(function (x) { return String(x.Email).toLowerCase() === em; })) return { ok: false, error: 'EMAIL_IN_USE' };
         per.Email = em; base.push('ID_CHECK'); base.push('NEW_EMAIL');
       }
@@ -558,6 +570,10 @@ function issue_(p, u) {
         sh_('Personnel').appendRow([addedId, r.Name, r.Company, '', em, 'Yes', 'No', pool_(r.Pool)]);
         audit_(r.ReqID, 'PERSON_ADDED', u.name, addedId + ' ' + r.Name + (em ? ' / ' + em + ' (code received + ID checked)' : ' (no email – sponsor ' + r.Sponsor + ', ID checked)'));
       }
+    }
+    if (String(r.PersonID) !== 'NEW' && /SELF_EMAIL/.test(r.Flags) && r.Email) {   // save the email the person typed themselves
+      const ps = sh_('Personnel'), pv = ps.getDataRange().getValues(), ec = pv[0].indexOf('Email'), ic = pv[0].indexOf('PersonID');
+      for (let i = 1; i < pv.length; i++) if (String(pv[i][ic]) === String(r.PersonID) && !pv[i][ec]) { ps.getRange(i + 1, ec + 1).setValue(String(r.Email).toLowerCase()); audit_(r.ReqID, 'EMAIL_SAVED', u.name, r.PersonID + ' ' + r.Email + ' (typed by the person, ID checked)'); }
     }
     setReq_(row, { Status: 'Issued', IssuedBy: u.name, IssuedAt: now, ReceiptCode: receipt, OtpHash: '', PersonID: addedId || r.PersonID, Note: oldNote + (loanId ? (oldNote ? ' | ' : '') + 'Loan ' + loanId : '') });
     audit_(r.ReqID, 'ISSUED', u.name, 'Receipt ' + receipt + (r.Sponsor ? ' | ID checked | sponsor ' + r.Sponsor : '') + (oldNote ? ' | ' + oldNote : ''));

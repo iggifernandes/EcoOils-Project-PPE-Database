@@ -82,7 +82,7 @@ details>summary{min-height:32px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.13.1';
+const VERSION = 'v2.14.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -225,6 +225,12 @@ Object.assign(T.id,{emailStaff:'Email kerja Anda',sendCode:'Kirim kode masuk',co
 Object.assign(T.id.ERR,{BAD_EMAIL:'Masukkan email yang valid.',BAD_CODE:'Kode salah.',CODE_EXPIRED:'Kode kedaluwarsa. Minta kode baru.',LOCKED_TRY_LATER:'Terlalu banyak percobaan. Tunggu sebentar.',EMAIL_FAILED:'Email tidak dapat dikirim. Coba lagi.',SESSION_EXPIRED:'Sesi berakhir. Silakan masuk lagi.'});
 Object.assign(T.ms,{emailStaff:'E-mel kerja anda',sendCode:'Hantar kod log masuk',codeSentTo:'Kod 6 digit dihantar ke',enterCode:'Masukkan kod',verify:'Log masuk',changeEmail:'Guna e-mel lain',sessionEnded:'Sesi tamat. Sila log masuk semula.'});
 Object.assign(T.ms.ERR,{BAD_EMAIL:'Masukkan e-mel yang sah.',BAD_CODE:'Kod salah.',CODE_EXPIRED:'Kod tamat tempoh. Minta kod baharu.',LOCKED_TRY_LATER:'Terlalu banyak cubaan. Sila tunggu sebentar.',EMAIL_FAILED:'E-mel tidak dapat dihantar. Cuba lagi.',SESSION_EXPIRED:'Sesi tamat. Sila log masuk semula.'});
+Object.assign(T.en.ERR,{BAD_DOMAIN:'Use your company email (@ecooils.com.my or @ecooils.co.id).'});
+Object.assign(T.id.ERR,{BAD_DOMAIN:'Gunakan email perusahaan Anda (@ecooils.com.my atau @ecooils.co.id).'});
+Object.assign(T.ms.ERR,{BAD_DOMAIN:'Gunakan e-mel syarikat anda (@ecooils.com.my atau @ecooils.co.id).'});
+Object.assign(T.en,{selfEmailNote:'No email is on file for you yet. Type your company email (@ecooils.com.my or @ecooils.co.id): the code is sent there and you show your ID at the store. It is saved after a correct issue. No company email? Choose a sponsor below instead.',f_SELF_EMAIL:'Email typed by the person – saved to the register after issue'});
+Object.assign(T.id,{selfEmailNote:'Belum ada email untuk Anda. Ketik email perusahaan (@ecooils.com.my atau @ecooils.co.id): kode dikirim ke sana dan Anda menunjukkan ID di gudang. Email disimpan setelah penyerahan yang benar. Tidak punya email perusahaan? Pilih penaja di bawah.',f_SELF_EMAIL:'Email diketik sendiri – disimpan ke daftar setelah penyerahan'});
+Object.assign(T.ms,{selfEmailNote:'Belum ada e-mel untuk anda. Taip e-mel syarikat (@ecooils.com.my atau @ecooils.co.id): kod dihantar ke sana dan anda menunjukkan ID di stor. E-mel disimpan selepas pengeluaran yang betul. Tiada e-mel syarikat? Pilih penaja di bawah.',f_SELF_EMAIL:'E-mel ditaip sendiri – disimpan ke daftar selepas pengeluaran'});
 const pl = p => t('p_'+(p==='Asset'?'Asset':'Project'));
 
 const qs = new URLSearchParams(location.search);
@@ -320,7 +326,8 @@ function formView(){
   <div id="reg"><label>${t('company')}</label><select id="co" onchange="fillNames()"><option value="">${t('select')}</option>${cos.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
   <label>${t('name')}</label><select id="per" onchange="needSpon()"><option value="">${t('select')}</option></select></div>
   <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="nl" style="width:auto" onchange="$('manual').classList.toggle('hide',!this.checked);$('reg').classList.toggle('hide',this.checked);needSpon()"> ${t('notListed')}</label>
-  <div id="manual" class="hide"><label>${t('name')}</label><input id="mn"><label>${t('company')}</label><input id="mc" list="depts"><datalist id="depts">${cos.map(c=>`<option value="${esc(c)}">`).join('')}</datalist><label>${t('emailL')}</label><input id="mem" type="email" inputmode="email" autocomplete="email" oninput="needSpon()"><div class="small" style="margin-top:6px">${t('newEmailNote')}</div></div>
+  <div id="manual" class="hide"><label>${t('name')}</label><input id="mn"><label>${t('company')}</label><input id="mc" list="depts"><datalist id="depts">${cos.map(c=>`<option value="${esc(c)}">`).join('')}</datalist><label>${t('emailL')}</label><input id="mem" type="email" inputmode="email" autocomplete="email" placeholder="name@ecooils.com.my" oninput="needSpon()"><div class="small" style="margin-top:6px">${t('newEmailNote')}</div></div>
+  <div id="pemw" class="hide"><div class="small" style="margin-top:8px">${t('selfEmailNote')}</div><label>${t('emailL')}</label><input id="pem" type="email" inputmode="email" autocomplete="email" placeholder="name@ecooils.com.my" oninput="needSpon()"></div>
   <div id="spon" class="hide"><div class="small" style="margin-top:8px">${t('noEmailSpon')}. ${t('sponsorNote')}</div><label>${t('sponsor')}</label><select id="sc" onchange="sponNames()"><option value="">${t('company')}…</option>${[...new Set(people.filter(p=>p.Sponsor).map(p=>p.Company))].sort().map(c=>`<option>${esc(c)}</option>`).join('')}</select><select id="sp" style="margin-top:6px"><option value="">${t('select')}</option></select></div>
   <label>${t('items')}</label><div id="rows"></div><div class="small" style="margin:4px 0">${t('mkFree')} · ${t('mkLoan')}</div><button class="s" onclick="addRow()">${t('add')}</button> <button class="s" onclick="addKit()">${t('kit')}</button><div id="splitnote"></div>
   <label>${t('reason')}</label><select id="rsn" onchange="repNote()">${REASONS.map(r=>`<option value="${r}">${t('R_'+r.replace('-','_'))}</option>`).join('')}</select>
@@ -329,7 +336,7 @@ function formView(){
   <button class="p" id="go" onclick="submitReq()">${t('submit')}</button><div id="msg"></div></div>`;
   addRow();
 }
-function needSpon(){ const man=$('nl').checked, p=people.find(x=>x.PersonID==$('per').value); $('spon').classList.toggle('hide',!((man&&!$('mem').value.trim())||(!man&&p&&p.NoEmail))); }
+function needSpon(){ const man=$('nl').checked, p=people.find(x=>x.PersonID==$('per').value), own=!man&&p&&p.NoEmail; $('pemw').classList.toggle('hide',!own); $('spon').classList.toggle('hide',!((man&&!$('mem').value.trim())||(own&&!$('pem').value.trim()))); }
 function sponNames(){ const c=$('sc').value; $('sp').innerHTML=`<option value="">${t('select')}</option>`+people.filter(p=>p.Sponsor&&p.Company===c).sort((a,b)=>a.Name.localeCompare(b.Name)).map(p=>`<option value="${esc(p.PersonID)}">${esc(p.Name)}</option>`).join(''); }
 function fillNames(){ const c=$('co').value; $('per').innerHTML = `<option value="">${t('select')}</option>` + people.filter(p=>p.Company===c).sort((a,b)=>a.Name.localeCompare(b.Name)).map(p=>`<option value="${esc(p.PersonID)}">${esc(p.Name)}</option>`).join(''); }
 function addKit(){ if(!$('rows')) return; $('rows').innerHTML=''; catalog.filter(i=>String(i.Kit).toLowerCase()==='yes').forEach(i=>addRow(i.Item)); $('rsn').value='New'; repNote(); splitNote(); }
@@ -354,7 +361,7 @@ async function submitReq(){
   if(!items.length || items.some(i=>i.need && !i.size)) return $('msg').innerHTML = '<div class="err">'+esc(err('NO_ITEMS'))+'</div>';
   const body = {action:'submit',items:items.map(({item,size,qty})=>({item,size,qty})),reason,remark:$('rm').value,facilityReported:reason==='Lost'&&$('fr').checked,facilityName:reason==='Lost'?$('fn').value.trim():''};
   if(man){ body.newPerson = {name:$('mn').value.trim(),company:$('mc').value.trim(),email:$('mem').value.trim()}; }
-  else { body.personId = $('per').value; if(!body.personId) return $('msg').innerHTML = '<div class="err">'+esc(t('name'))+'?</div>'; }
+  else { body.personId = $('per').value; if(!body.personId) return $('msg').innerHTML = '<div class="err">'+esc(t('name'))+'?</div>'; if(!$('pemw').classList.contains('hide') && $('pem').value.trim()) body.email = $('pem').value.trim(); }
   if(!$('spon').classList.contains('hide')) body.sponsorId = $('sp').value;
   $('go').disabled = true;
   const r = await api(body);
