@@ -82,7 +82,7 @@ details>summary{min-height:32px}
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.16.1';
+const VERSION = 'v2.17.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -94,7 +94,7 @@ en:{ttl:'PPE Request & Issue',newReq:'New request',mine:'My requests',company:'D
  R_New:'New / joiner',R_Replacement_Worn:'Replacement – worn out',R_Replacement_Damaged:'Replacement – damaged',R_Lost:'Lost',R_Additional:'Additional / task specific',
  sent:'Request sent. You will get an email with a collection code once HSSE approves it.',ref:'Reference',noReq:'No requests on this device yet.',cancel:'Cancel request',
  s_Requested:'Waiting for approval',s_Approved:'Approved – check your email for the code, then go to the PPE store',s_Issued:'Issued',s_Rejected:'Rejected',s_Cancelled:'Cancelled',s_Expired:'Expired – submit a new request',s_Voided:'Voided',
- pin:'PIN',login:'Log in',logout:'Log out',pending:'Approvals',collect:'Store issue',records:'Records',stock:'Stock',reports:'Reports',qr:'QR poster',
+ mailTab:'Email draft',mailIntro:'Pick the PPE and sizes. The app writes the email subject and body for you. Copy them into a new Outlook message and add the address.',mailItem:'Item',mailAdd:'Add to email',mailNeed:'Needed by (optional)',mailWhy:'Reason / note (optional)',mailLang:'Email language',mailSub:'Subject',mailBody:'Email body',mailCopyS:'Copy subject',mailCopyB:'Copy email body',mailCopyT:'Copy as plain text',mailCopied:'Copied',mailEmpty:'Add at least one item to see the email.',mailRm:'Remove',mailClr:'Clear list',pin:'PIN',login:'Log in',logout:'Log out',pending:'Approvals',collect:'Store issue',records:'Records',stock:'Stock',reports:'Reports',qr:'QR poster',
  approve:'Approve',reject:'Reject',rejWhy:'Reason for rejecting?',voidWhy:'Reason for voiding?',void:'Void',viewPhoto:'View photo',history:'Past issues',
  otp:'6-digit code from employee',issue:'Issue PPE',issued:'Issued. Receipt',none:'Nothing here.',expires:'Collect before',by:'Approved by',
  f_NOT_IN_REGISTER:'Not in personnel register – details typed by the employee',f_SPONSORED:'Sponsored – code goes to sponsor: ',f_ID_CHECK:'ID check required at store',f_EARLY_REISSUE:'Early re-issue: ',f_LOST:'Reported lost',f_LOST_NOT_REPORTED:'Not yet reported to Head of Facility',f_DAMAGED:'Reported damaged',
@@ -109,7 +109,7 @@ id:{ttl:'Permintaan & Penyerahan APD',newReq:'Permintaan baru',mine:'Permintaan 
  R_New:'Baru / karyawan baru',R_Replacement_Worn:'Pengganti – aus',R_Replacement_Damaged:'Pengganti – rusak',R_Lost:'Hilang',R_Additional:'Tambahan / sesuai tugas',
  sent:'Permintaan terkirim. Anda akan menerima email berisi kode pengambilan setelah HSSE menyetujui.',ref:'Referensi',noReq:'Belum ada permintaan di perangkat ini.',cancel:'Batalkan permintaan',
  s_Requested:'Menunggu persetujuan',s_Approved:'Disetujui – cek email untuk kode, lalu ke gudang APD',s_Issued:'Sudah diserahkan',s_Rejected:'Ditolak',s_Cancelled:'Dibatalkan',s_Expired:'Kedaluwarsa – ajukan permintaan baru',s_Voided:'Dibatalkan admin',
- pin:'PIN',login:'Masuk',logout:'Keluar',pending:'Persetujuan',collect:'Gudang APD',records:'Catatan',stock:'Stok',reports:'Laporan',qr:'Poster QR',
+ mailTab:'Draf email',mailIntro:'Pilih APD dan ukuran. Aplikasi menulis subjek dan isi email untuk Anda. Salin ke pesan baru di Outlook lalu tambahkan alamatnya.',mailItem:'Item',mailAdd:'Tambah ke email',mailNeed:'Dibutuhkan sebelum (opsional)',mailWhy:'Alasan / catatan (opsional)',mailLang:'Bahasa email',mailSub:'Subjek',mailBody:'Isi email',mailCopyS:'Salin subjek',mailCopyB:'Salin isi email',mailCopyT:'Salin sebagai teks biasa',mailCopied:'Tersalin',mailEmpty:'Tambahkan minimal satu item untuk melihat email.',mailRm:'Hapus',mailClr:'Kosongkan daftar',pin:'PIN',login:'Masuk',logout:'Keluar',pending:'Persetujuan',collect:'Gudang APD',records:'Catatan',stock:'Stok',reports:'Laporan',qr:'Poster QR',
  approve:'Setujui',reject:'Tolak',rejWhy:'Alasan menolak?',voidWhy:'Alasan pembatalan?',void:'Batalkan',viewPhoto:'Lihat foto',history:'Riwayat',
  otp:'Kode 6 digit dari karyawan',issue:'Serahkan APD',issued:'Diserahkan. Bukti',none:'Kosong.',expires:'Ambil sebelum',by:'Disetujui oleh',
  f_NOT_IN_REGISTER:'Tidak ada di daftar personel – data diisi sendiri',f_SPONSORED:'Disponsori – kode ke sponsor: ',f_ID_CHECK:'Wajib cek ID di gudang',f_EARLY_REISSUE:'Penggantian terlalu cepat: ',f_LOST:'Dilaporkan hilang',f_LOST_NOT_REPORTED:'Belum dilaporkan ke Head of Facility',f_DAMAGED:'Dilaporkan rusak',
@@ -165,7 +165,7 @@ T.ms={ttl:'Permintaan & Pengeluaran PPE',newReq:'Permintaan baharu',mine:'Permin
  R_New:'Baharu / pekerja baharu',R_Replacement_Worn:'Penggantian – haus',R_Replacement_Damaged:'Penggantian – rosak',R_Lost:'Hilang',R_Additional:'Tambahan / mengikut tugas',
  sent:'Permintaan dihantar. Anda akan menerima e-mel dengan kod pengambilan selepas HSSE meluluskannya.',ref:'Rujukan',noReq:'Tiada permintaan pada peranti ini lagi.',cancel:'Batalkan permintaan',
  s_Requested:'Menunggu kelulusan',s_Approved:'Diluluskan – semak e-mel untuk kod, kemudian ke stor PPE',s_Issued:'Telah dikeluarkan',s_Rejected:'Ditolak',s_Cancelled:'Dibatalkan',s_Expired:'Tamat tempoh – hantar permintaan baharu',s_Voided:'Dibatalkan oleh admin',
- pin:'PIN',login:'Log masuk',logout:'Log keluar',pending:'Kelulusan',collect:'Stor PPE',records:'Rekod',stock:'Stok',reports:'Laporan',qr:'Poster QR',
+ mailTab:'Draf e-mel',mailIntro:'Pilih PPE dan saiz. Aplikasi menulis subjek dan kandungan e-mel untuk anda. Salin ke mesej baharu di Outlook dan tambah alamatnya.',mailItem:'Item',mailAdd:'Tambah ke e-mel',mailNeed:'Diperlukan sebelum (pilihan)',mailWhy:'Sebab / catatan (pilihan)',mailLang:'Bahasa e-mel',mailSub:'Subjek',mailBody:'Kandungan e-mel',mailCopyS:'Salin subjek',mailCopyB:'Salin kandungan e-mel',mailCopyT:'Salin sebagai teks biasa',mailCopied:'Disalin',mailEmpty:'Tambah sekurang-kurangnya satu item untuk melihat e-mel.',mailRm:'Buang',mailClr:'Kosongkan senarai',pin:'PIN',login:'Log masuk',logout:'Log keluar',pending:'Kelulusan',collect:'Stor PPE',records:'Rekod',stock:'Stok',reports:'Laporan',qr:'Poster QR',
  approve:'Luluskan',reject:'Tolak',rejWhy:'Sebab menolak?',voidWhy:'Sebab pembatalan?',void:'Batalkan',viewPhoto:'Lihat foto',history:'Pengeluaran lepas',
  otp:'Kod 6 digit daripada pekerja',issue:'Keluarkan PPE',issued:'Dikeluarkan. Resit',none:'Tiada apa-apa di sini.',expires:'Ambil sebelum',by:'Diluluskan oleh',
  f_NOT_IN_REGISTER:'Tiada dalam daftar kakitangan – butiran ditaip oleh pekerja',f_SPONSORED:'Ditaja – kod dihantar kepada penaja: ',f_ID_CHECK:'Semakan ID diperlukan di stor',f_NEW_EMAIL:'E-mel dimasukkan sendiri oleh pekerja baharu – akan ditambah ke daftar selepas pengeluaran',f_EARLY_REISSUE:'Penggantian terlalu awal: ',f_LOST:'Dilaporkan hilang',f_LOST_NOT_REPORTED:'Belum dilaporkan kepada Head of Facility',f_DAMAGED:'Dilaporkan rosak',
@@ -549,10 +549,10 @@ function logout(){ const p=S.pin; if(p) api({action:'logout',pin:p}); clearSess(
 function bad(r){ if(r.error==='SESSION_EXPIRED'||r.error==='BAD_PIN'){ clearSess(); S.pin=''; staffLogin(t('sessionEnded')); return true; } return false; }
 async function staffShell(){
   const A = S.role==='approver';
-  const tabs = A ? [['pending','pending'],['collect','collect'],['visitors','visitors'],['records','records'],['stock','stock'],['reports','reports'],['training','trainStaff'],['admin','adminTab'],['qr','qr']] : [['collect','collect'],['visitors','visitors'],['stock','stock'],['records','records'],['training','trainStaff']];
+  const tabs = A ? [['pending','pending'],['collect','collect'],['visitors','visitors'],['records','records'],['stock','stock'],['mail','mailTab'],['reports','reports'],['training','trainStaff'],['admin','adminTab'],['qr','qr']] : [['collect','collect'],['visitors','visitors'],['stock','stock'],['mail','mailTab'],['records','records'],['training','trainStaff']];
   if(!S.tab) S.tab = S.hl ? ((A && !PRE) ? 'pending' : 'collect') : tabs[0][0];
   $('app').innerHTML = `<div class="small" style="margin-bottom:6px">${esc(S.name)} · ${esc(S.role)}</div><div class="tabs">${tabs.map(([k,l])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';staffShell()">${t(l)}</button>`).join('')}<button onclick="logout()">${t('logout')}</button></div><div id="pane"></div>`;
-  ({pending:vQueue,collect:vQueue,visitors:vVisitors,records:vRecords,stock:vStock,reports:vReports,qr:vQR,training:vTraining,admin:vAdmin})[S.tab]();
+  ({pending:vQueue,collect:vQueue,visitors:vVisitors,records:vRecords,stock:vStock,reports:vReports,qr:vQR,mail:vMail,training:vTraining,admin:vAdmin})[S.tab]();
 }
 async function loadQ(){ const r = await api({action:'queue',pin:S.pin}); if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return null; } S.loanNames = r.loanItems||[]; return r.queue; }
 async function vQueue(){
@@ -611,6 +611,74 @@ function csv(){
   const h=['ReqID','CreatedAt','Name','Company','Items','Reason','Status','ApprovedBy','ApprovedAt','IssuedBy','IssuedAt','ReceiptCode','Note'], q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   const rows=[h.join(',')].concat(S.recs.map(r=>h.map(k=>q(k==='Items'?itemsTxt(r.ApprovedItems||r.Items):r[k])).join(',')));
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})); a.download='PPE-records.csv'; a.click();
+}
+
+
+/* ---------- Email draft (PPE request for Outlook; subject + body only, no address, no signature) ---------- */
+const MAILT = {
+  en:{sub:'PPE request - Mentari Project',hi:'Dear',lead:'Please arrange the following PPE for the Mentari Project:',no:'No.',item:'Item',size:'Size',qty:'Qty',need:'Needed by',why:'Reason',thx:'Thank you.'},
+  id:{sub:'Permintaan APD - Proyek Mentari',hi:'Yth.',lead:'Mohon disiapkan APD berikut untuk Proyek Mentari:',no:'No.',item:'Item',size:'Ukuran',qty:'Jml',need:'Dibutuhkan sebelum',why:'Alasan',thx:'Terima kasih.'},
+  ms:{sub:'Permintaan PPE - Projek Mentari',hi:'Kepada',lead:'Mohon sediakan PPE berikut untuk Projek Mentari:',no:'No.',item:'Item',size:'Saiz',qty:'Kuantiti',need:'Diperlukan sebelum',why:'Sebab',thx:'Terima kasih.'}
+};
+let MAIL = {lines:[], lang:null};
+async function vMail(){
+  $('pane').innerHTML='…'; const r = await api({action:'stock',pin:S.pin});
+  if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return; }
+  S.items = r.items||[]; if(!MAIL.lang) MAIL.lang = L;
+  const cats = [...new Set(S.items.map(i=>i.Category||''))];
+  const opts = cats.map(c=>`<optgroup label="${esc(c)}">${S.items.filter(i=>(i.Category||'')===c).map(i=>`<option value="${esc(i.Item)}" data-s="${esc(i.Sizes||'')}">${esc(i.Item)}</option>`).join('')}</optgroup>`).join('');
+  $('pane').innerHTML = `<div class="card"><div class="small">${t('mailIntro')}</div>
+  <label>${t('mailItem')}</label><select id="mi" onchange="mailSizes()"><option value="">${t('select')}</option>${opts}</select>
+  <label>${t('size')}</label><select id="ms"><option value="">–</option></select>
+  <label>${t('qty')}</label><input id="mq" type="number" min="1" max="999" value="1">
+  <button class="p" onclick="mailAdd()">${t('mailAdd')}</button></div>
+  <div class="card"><div id="mlines"></div>
+  <label>${t('mailNeed')}</label><input id="mnd" type="date" oninput="mailRender()">
+  <label>${t('mailWhy')}</label><input id="mwy" maxlength="200" oninput="mailRender()">
+  <label>${t('mailLang')}</label><select id="mlg" onchange="MAIL.lang=this.value;mailRender()"><option value="en">English</option><option value="id">Bahasa Indonesia</option><option value="ms">Bahasa Melayu</option></select></div>
+  <div class="card" id="mout"></div>`;
+  $('mlg').value = MAIL.lang; mailRender();
+}
+function mailSizes(){ const o=$('mi').selectedOptions[0]; const sz=String((o&&o.dataset.s)||'').split(',').map(x=>x.trim()).filter(Boolean); $('ms').innerHTML = sz.length ? sz.map(x=>`<option>${esc(x)}</option>`).join('') : '<option value="">–</option>'; }
+function mailAdd(){
+  const item=$('mi').value; if(!item) return; const size=$('ms').value||''; const qty=Math.max(1,Math.min(999,parseInt($('mq').value,10)||1));
+  const ex=MAIL.lines.find(l=>l.item===item&&l.size===size); if(ex) ex.qty+=qty; else MAIL.lines.push({item,size,qty});
+  $('mq').value=1; mailRender();
+}
+function mailRm(i){ MAIL.lines.splice(i,1); mailRender(); }
+function mailClear(){ MAIL.lines=[]; mailRender(); }
+function mailDate(v){ const d=new Date(v+'T00:00:00'); return isNaN(d)?v:d.toLocaleDateString(MAIL.lang==='en'?'en-GB':(MAIL.lang==='id'?'id-ID':'ms-MY'),{day:'numeric',month:'long',year:'numeric'}); }
+function mailParts(){
+  const M=MAILT[MAIL.lang]||MAILT.en, ln=MAIL.lines, need=($('mnd')||{}).value||'', why=(($('mwy')||{}).value||'').trim();
+  const subject = M.sub + (need?' - '+mailDate(need):'');
+  const plain = [M.hi,'',M.lead,'',...ln.map((l,i)=>`${i+1}. ${l.item}${l.size?' - '+M.size+' '+l.size:''} - ${M.qty}: ${l.qty}`),'']
+    .concat(need?[`${M.need}: ${mailDate(need)}`]:[]).concat(why?[`${M.why}: ${why}`]:[]).concat(need||why?['']:[]).concat([M.thx]).join('\n');
+  const td='style="border:1px solid #999;padding:4px 8px"', th='style="border:1px solid #999;padding:4px 8px;background:#f2f2f2;text-align:left"';
+  const html = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt"><p>${esc(M.hi)}</p><p>${esc(M.lead)}</p><table style="border-collapse:collapse"><tr><th ${th}>${esc(M.no)}</th><th ${th}>${esc(M.item)}</th><th ${th}>${esc(M.size)}</th><th ${th}>${esc(M.qty)}</th></tr>${ln.map((l,i)=>`<tr><td ${td}>${i+1}</td><td ${td}>${esc(l.item)}</td><td ${td}>${esc(l.size||'-')}</td><td ${td} align="right">${l.qty}</td></tr>`).join('')}</table>${need?`<p>${esc(M.need)}: <b>${esc(mailDate(need))}</b></p>`:''}${why?`<p>${esc(M.why)}: ${esc(why)}</p>`:''}<p>${esc(M.thx)}</p></div>`;
+  return {subject,plain,html};
+}
+function mailRender(){
+  const ln=MAIL.lines;
+  $('mlines').innerHTML = ln.length ? ln.map((l,i)=>`<div style="display:flex;gap:8px;align-items:center;margin:4px 0"><span style="flex:1">${esc(l.item)}${l.size?' ('+esc(l.size)+')':''} × ${l.qty}</span><button class="s" onclick="mailRm(${i})">${t('mailRm')}</button></div>`).join('')+`<button class="s" onclick="mailClear()">${t('mailClr')}</button>` : '';
+  if(!ln.length){ $('mout').innerHTML = `<div class="empty">${t('mailEmpty')}</div>`; return; }
+  const m=mailParts();
+  $('mout').innerHTML = `<label>${t('mailSub')}</label><input id="msub" value="${esc(m.subject)}" readonly>
+  <button class="s" style="margin-top:6px" onclick="mailCopy('s',this)">${t('mailCopyS')}</button>
+  <label>${t('mailBody')}</label><div id="mbody" style="border:1px solid var(--l);border-radius:8px;padding:10px;background:#fff;color:#231f20;overflow-x:auto">${m.html}</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="p" style="margin:0;flex:1" onclick="mailCopy('b',this)">${t('mailCopyB')}</button><button class="s" onclick="mailCopy('t',this)">${t('mailCopyT')}</button></div>`;
+}
+async function mailCopy(kind,btn){
+  const m=mailParts(); let ok=false;
+  try{
+    if(kind==='s'){ await navigator.clipboard.writeText(m.subject); ok=true; }
+    else if(kind==='t'){ await navigator.clipboard.writeText(m.plain); ok=true; }
+    else if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([m.html],{type:'text/html'}),'text/plain':new Blob([m.plain],{type:'text/plain'})})]); ok=true; }
+  }catch(e){ ok=false; }
+  if(!ok){ try{
+    if(kind==='b'){ const el=$('mbody'), rg=document.createRange(); rg.selectNodeContents(el); const sl=getSelection(); sl.removeAllRanges(); sl.addRange(rg); ok=document.execCommand('copy'); sl.removeAllRanges(); }
+    else { const ta=document.createElement('textarea'); ta.value = kind==='s'?m.subject:m.plain; document.body.appendChild(ta); ta.select(); ok=document.execCommand('copy'); ta.remove(); }
+  }catch(e){ ok=false; } }
+  if(btn){ const o=btn.textContent; btn.textContent = ok ? t('mailCopied')+' ✓' : '⚠'; setTimeout(()=>{ btn.textContent=o; },1600); }
 }
 
 async function vStock(){
