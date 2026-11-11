@@ -83,7 +83,7 @@ header.eh .eh-l button.on,header.eh .eh-l button.active,header.eh .eh-l button[a
 #hoPrint,#peek{display:none}
 #peek.on{display:flex;position:fixed;inset:0;background:rgba(35,31,32,.88);z-index:50;align-items:center;justify-content:center;flex-direction:column;padding:12px}#peek img,#peek iframe{max-width:100%;max-height:82vh;background:#fff;border-radius:6px;width:100%}#peek iframe{height:80vh}
 .drop{border:2px dashed var(--l);border-radius:8px;padding:12px;text-align:center;color:#666}.drop.on{border-color:#44a276;background:#e8f3ee}
-@media print{body.hoprint>*:not(#hoPrint){display:none!important}body.hoprint #hoPrint{display:block}@page{size:A4;margin:12mm}header,.ptitle,.tabs,footer,.noprint{display:none!important}body::after{display:none}body{background:#fff;color:#000}}
+@media print{body.hoprint>*:not(#hoPrint){display:none!important}body.hoprint #hoPrint{display:block}@page{size:A4;margin:0}body.hoprint #hoPrint{padding:12mm 12mm 18mm}#hoFoot{position:fixed;left:0;right:0;bottom:6mm;text-align:center;font:400 10px Jost,Arial,sans-serif;color:#555}header,.ptitle,.tabs,footer,.noprint{display:none!important}body::after{display:none}body{background:#fff;color:#000}}
 </style>
 </head>
 <body>
@@ -96,7 +96,7 @@ header.eh .eh-l button.on,header.eh .eh-l button.active,header.eh .eh-l button[a
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.19.0';
+const VERSION = 'v2.19.1';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -796,13 +796,13 @@ async function hoUp(id){
 async function hoView(key){ const r=await api({action:'handoverFile',pin:S.pin,id:key}); if(!r.ok) return alert(err(r.error)); peek(r.b64,r.mime); if(!r.verified) alert(t('doBad')); }
 function hoPrint(id){
   const b=HO.info.batches.find(x=>x.BatchID===id); if(!b) return;
-  const logo=(document.querySelector('header img')||{}).src||'', today=new Date().toLocaleDateString('en-GB',{timeZone:'Asia/Jakarta',day:'numeric',month:'long',year:'numeric'});
+  const logo=(document.querySelector('header img')||{}).src||'', now=new Date().toLocaleString('en-GB',{timeZone:'Asia/Jakarta',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+' WIB';
   const th='style="border:1px solid #444;padding:5px 6px;background:#eee;text-align:left;font-size:11px"', td='style="border:1px solid #444;padding:4px 6px;font-size:12px;height:30px"';
   $('hoPrint').innerHTML=`<div style="font-family:Jost,Arial,sans-serif;color:#000"><div style="display:flex;justify-content:space-between;align-items:center"><img src="${logo}" style="height:46px"><div style="text-align:right;font-size:11px;color:#555">${esc(b.BatchID)}</div></div>
   <h2 style="font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#555;margin:14px 0 4px;font-size:18px">${esc(T.en.hoSheetT)} / ${esc(T.id.hoSheetT)}</h2><div style="height:1px;background:#000;margin-bottom:10px"></div>
   <table style="width:100%;font-size:12px;margin-bottom:10px"><tr><td><b>PPE:</b> ${esc(b.Item)}${b.Title?' · '+esc(b.Title):''}</td><td style="text-align:right"><b>${esc(T.en.hoDate)}:</b> ____ / ____ / ________</td></tr><tr><td colspan="2"><b>${esc(T.en.hoBy)} / ${esc(T.id.hoBy)}:</b> ${esc(S.name)} (HSSE)</td></tr></table>
   <table style="width:100%;border-collapse:collapse"><thead><tr><th ${th}>${esc(T.en.hoNo)}</th><th ${th}>Name / Nama</th><th ${th}>${esc(T.en.hoCo)}</th><th ${th}>Size / Ukuran</th><th ${th}>Qty / Jml</th><th ${th}>${esc(T.en.hoNameOn)}</th><th ${th} style="width:34%;border:1px solid #444;padding:5px 6px;background:#eee;text-align:left;font-size:11px">${esc(T.en.hoSign)} / ${esc(T.id.hoSign)}</th></tr></thead><tbody>${b.Lines.map((l,i)=>`<tr style="page-break-inside:avoid"><td ${td}>${i+1}</td><td ${td}>${esc(l.name)}</td><td ${td}>${esc(l.company||'')}</td><td ${td}>${esc(l.size||'–')}</td><td ${td}>${l.qty}</td><td ${td}>${esc(l.nameOn||'')}</td><td ${td}></td></tr>`).join('')}</tbody></table>
-  <p style="font-size:11px;margin-top:12px">${esc(T.en.hoConfirm)}<br><i>${esc(T.id.hoConfirm)}</i></p><p style="font-size:10px;color:#777">${esc(b.BatchID)} · ${esc(today)} · ${esc(T.en.hoNoStock)}</p></div>`;
+  <p style="font-size:11px;margin-top:12px">${esc(T.en.hoConfirm)}<br><i>${esc(T.id.hoConfirm)}</i></p></div><div id="hoFoot">Dicetak / Printed: ${esc(now)}</div>`;
   document.body.classList.add('hoprint'); const done=()=>{ document.body.classList.remove('hoprint'); window.removeEventListener('afterprint',done); }; window.addEventListener('afterprint',done); setTimeout(()=>window.print(),150);
 }
 
