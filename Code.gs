@@ -1,12 +1,11 @@
+const VERSION = '2.16.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
- * VERSION 2.15.0
  *
  * Flow: Employee requests (app / QR)  ->  Approver approves  ->  employee gets OTP by email
  *       ->  Storekeeper enters OTP at the counter and issues  ->  receipt emailed + stock deducted + audit trail.
  */
-const VERSION = '2.15.0';
 const OTP_DAYS = 14;        // approved request must be collected within this many days
 const MAX_OTP_TRIES = 5;
 const MAX_OPEN_PER_PERSON = 3;
@@ -25,6 +24,8 @@ const SHEETS = {
   Loans: ['LoanID', 'CreatedAt', 'Visitors', 'VisitorCompany', 'HostID', 'HostName', 'HostEmail', 'Items', 'Purpose', 'Status', 'OutBy', 'ReturnedAt', 'ReturnedBy', 'Condition', 'Note', 'LastChased', 'Chases', 'Type', 'Due', 'Pool'],
   Recipients: ['Email', 'Name', 'Type', 'Active'],   // Type: MonthlyProject = monthly Project PPE report
   Deliveries: ['DOID', 'Date', 'DONo', 'Supplier', 'Pool', 'Lines', 'TotalQty', 'FileName', 'FileMime', 'FileId', 'FileHash', 'UploadedBy', 'UploadedAt'],   // every stock receipt: delivery order number + the scanned DO file kept in Drive (SHA-256 recorded)
+  Handovers: ['BatchID', 'CreatedAt', 'Item', 'Title', 'Lines', 'CreatedBy'],   // direct handovers (items that never go through the store): one batch = one printed sign sheet
+  HandoverFiles: ['FileKey', 'BatchID', 'FileName', 'FileMime', 'FileId', 'FileHash', 'UploadedBy', 'UploadedAt'],   // scanned / photographed signed sheets, kept in Drive, SHA-256 checked on every view
   Training: ['Timestamp', 'PersonID', 'Name', 'Company', 'Score', 'Total', 'Module'],
   Audit: ['Timestamp', 'ReqID', 'Event', 'Actor', 'Detail']
 };
@@ -175,6 +176,12 @@ function doPost(e) {
       case 'itemList': return json_({ ok: true, items: rows_('Items') });
       case 'itemApproval': return json_(itemApproval_(p, u));
       case 'history': return json_(history_(p));
+      case 'handoverInfo': return json_(handoverInfo_());
+      case 'handoverCreate': return json_(handoverCreate_(p, u));
+      case 'handoverGive': return json_(handoverGive_(p, u));
+      case 'handoverUndo': return json_(handoverUndo_(p, u));
+      case 'handoverUpload': return json_(handoverUpload_(p, u));
+      case 'handoverFile': return json_(handoverFile_(p));
     }
     return json_({ ok: false, error: 'UNKNOWN_ACTION' });
   } catch (err) {
@@ -704,6 +711,154 @@ function stockBulk_(p, u, isA) {
     return { ok: true, lines: lines.length, doId: doId };
   } finally { lock.releaseLock(); }
 }
+
+/* ================= Direct handover (v2.16) =================
+ * For PPE that never goes through the store (e.g. coveralls the HSSE manager hands out himself).
+ * Approver only. No approval step, no code, NO stock movement. One batch = one printed sign sheet.
+ * Each person handed over gets a normal Requests row (Status Issued, Flags DIRECT) so it shows in records, history and reports,
+ * plus an email. The signed paper sheet is uploaded afterwards and ticks each person as signed. */
+function hoSheet_(name) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet(); let s = ss.getSheetByName(name);
+  if (!s) { s = ss.insertSheet(name); s.getRange(1, 1, 1, SHEETS[name].length).setValues([SHEETS[name]]).setFontWeight('bold'); s.setFrozenRows(1); }
+  return s;
+}
+function hoRows_(name) { hoSheet_(name); return rows_(name); }
+function hoBatch_(id) {
+  const s = hoSheet_('Handovers'), n = s.getLastRow(); if (n < 2) return null;
+  const v = s.getRange(2, 1, n - 1, 6).getValues();
+  for (let i = 0; i < v.length; i++) if (String(v[i][0]) === String(id)) return { row: i + 2, id: v[i][0], created: v[i][1], item: v[i][2], title: v[i][3], lines: JSON.parse(v[i][4] || '[]'), by: v[i][5] };
+  return null;
+}
+function hoSave_(b) { hoSheet_('Handovers').getRange(b.row, 5).setValue(JSON.stringify(b.lines)); }
+function handoverInfo_() {
+  const items = rows_('Items').filter(function (x) { return String(x.Loan) !== 'Only'; }).map(function (x) { return { Item: x.Item, Category: x.Category, Sizes: x.Sizes }; });
+  const people = rows_('Personnel').filter(function (x) { return String(x.Active).toLowerCase() !== 'no' && isProjectPerson_(x); })
+    .map(function (x) { return { PersonID: x.PersonID, Name: x.Name, Company: x.Company, HasEmail: !!x.Email }; });
+  const files = hoRows_('HandoverFiles');
+  const batches = hoRows_('Handovers').reverse().slice(0, 30).map(function (b) {
+    return { BatchID: b.BatchID, CreatedAt: b.CreatedAt, Item: b.Item, Title: b.Title, CreatedBy: b.CreatedBy, Lines: JSON.parse(b.Lines || '[]'),
+      Files: files.filter(function (f) { return f.BatchID === b.BatchID; }).map(function (f) { return { FileKey: f.FileKey, FileName: f.FileName, UploadedBy: f.UploadedBy, UploadedAt: f.UploadedAt }; }) };
+  });
+  return { ok: true, items: items, people: people, batches: batches };
+}
+function handoverCreate_(p, u) {
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const cat = rows_('Items'), it = catItem_(cat, String(p.item || ''));
+    if (!it || String(it.Loan) === 'Only') return { ok: false, error: 'BAD_LINE', detail: String(p.item || '') };
+    const sizes = String(it.Sizes || '').split(',').filter(Boolean), ppl = rows_('Personnel'), seen = {}, lines = [];
+    const src = (p.lines || []).slice(0, 200);
+    if (!src.length) return { ok: false, error: 'BAD_INPUT' };
+    for (let i = 0; i < src.length; i++) {
+      const l = src[i], per = ppl.filter(function (x) { return String(x.PersonID) === String(l.pid) && String(x.Active).toLowerCase() !== 'no' && isProjectPerson_(x); })[0];
+      const q = Math.floor(Number(l.qty)), sz = String(l.size || '');
+      if (!per) return { ok: false, error: 'BAD_LINE', detail: 'line ' + (i + 1) + ': person' };
+      if (!(q >= 1 && q <= 10)) return { ok: false, error: 'BAD_LINE', detail: 'line ' + (i + 1) + ': qty' };
+      if (sizes.length && sizes.indexOf(sz) < 0) return { ok: false, error: 'BAD_LINE', detail: 'line ' + (i + 1) + ': size ' + sz };
+      if (seen[per.PersonID]) return { ok: false, error: 'BAD_LINE', detail: 'line ' + (i + 1) + ': ' + per.Name + ' twice' };
+      seen[per.PersonID] = 1;
+      lines.push({ pid: per.PersonID, name: per.Name, company: per.Company, size: sz, qty: q, nameOn: String(l.nameOn || '').slice(0, 30), req: '', at: '', mail: '', signed: false });
+    }
+    const dd = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyMMdd'), n = hoRows_('Handovers').filter(function (x) { return String(x.BatchID).indexOf('HB-' + dd) === 0; }).length + 1;
+    const id = 'HB-' + dd + '-' + ('0' + n).slice(-2);
+    hoSheet_('Handovers').appendRow([id, new Date(), it.Item, String(p.title || '').slice(0, 80), JSON.stringify(lines), u.name]);
+    audit_(id, 'HANDOVER_LIST', u.name, it.Item + ' / ' + lines.length + ' people / ' + lines.reduce(function (s, x) { return s + x.qty; }, 0) + ' pcs');
+    return { ok: true, id: id };
+  } finally { lock.releaseLock(); }
+}
+function handoverMail_(per, line, item, reqId, receipt, by, now) {
+  const txt = line.qty + ' x ' + item + (line.size ? ' (' + line.size + ')' : '');
+  mail_(per.Email, 'PPE handed over – ' + txt + ' – ' + reqId, tpl_('PPE Handed Over / APD Diserahkan',
+    '<p>Dear ' + esc_(per.Name) + ',</p><p>You were handed / Anda menerima:</p><p><b>' + esc_(txt) + '</b>' + (line.nameOn ? '<br>Name on item / Nama pada item: <b>' + esc_(line.nameOn) + '</b>' : '') + '</p>' +
+    '<p>Handed over by / Diserahkan oleh: ' + esc_(by) + '<br>' + fmt_(now) + '<br>Ref: ' + reqId + '<br>Receipt / Bukti: <b>' + receipt + '</b></p>' +
+    '<p style="background:#e8f3ee;padding:8px 12px;border-radius:8px">Your signature on the handover sheet confirms you received it. / Tanda tangan Anda pada lembar serah terima menegaskan bahwa Anda telah menerimanya.</p>' +
+    careMail_([{ item: item }]) + '<p style="font-size:13px;color:#555">If this is wrong, contact HSSE immediately. / Jika tidak benar, hubungi HSSE segera.</p>'));
+}
+function handoverGive_(p, u) {
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const b = hoBatch_(p.batch); if (!b) return { ok: false, error: 'NOT_FOUND' };
+    const want = (p.pids || []).map(String), ppl = rows_('Personnel'), res = [], sh = sh_('Requests');
+    const dd = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyMMdd');
+    let seq = rows_('Requests').filter(function (x) { return String(x.ReqID).indexOf('HO-' + dd) === 0; }).length;
+    b.lines.forEach(function (l) {
+      if (want.indexOf(String(l.pid)) < 0) return;
+      if (l.req) { res.push({ pid: l.pid, ok: false, error: 'ALREADY_ISSUED' }); return; }
+      const per = ppl.filter(function (x) { return String(x.PersonID) === String(l.pid); })[0];
+      if (!per) { res.push({ pid: l.pid, ok: false, error: 'NOT_FOUND' }); return; }
+      const now = new Date(); seq++;
+      const reqId = 'HO-' + dd + '-' + ('00' + seq).slice(-3), items = JSON.stringify([{ item: b.item, size: l.size, qty: l.qty }]);
+      const receipt = hash_([reqId, per.PersonID, items, u.name, now.toISOString()].join('|')).slice(0, 12).toUpperCase();
+      const o = { ReqID: reqId, CreatedAt: now, PersonID: per.PersonID, Name: per.Name, Company: per.Company, Email: per.Email || '', Verified: 'Direct', Sponsor: '', Items: items, Reason: 'Direct handover',
+        Remark: l.nameOn ? 'Name on item: ' + l.nameOn : '', PhotoId: '', Flags: 'DIRECT' + (per.Email ? '' : ' NO_EMAIL'), Status: 'Issued', TokenHash: '', ApprovedBy: u.name, ApprovedAt: now, ApprovedItems: items,
+        OtpHash: '', OtpExpires: '', Tries: 0, IssuedBy: u.name, IssuedAt: now, ReceiptCode: receipt, Note: 'Direct handover (not from store stock) – batch ' + b.id, Reminded: '', Pool: 'Project' };
+      sh.appendRow(SHEETS.Requests.map(function (k) { return o[k] === undefined ? '' : o[k]; }));
+      l.req = reqId; l.at = now.toISOString(); l.receipt = receipt; l.mail = '';
+      audit_(reqId, 'HANDOVER', u.name, per.Name + ' / ' + l.qty + ' x ' + b.item + (l.size ? ' (' + l.size + ')' : '') + ' / batch ' + b.id + ' / receipt ' + receipt);
+      if (per.Email) { try { handoverMail_(per, l, b.item, reqId, receipt, u.name, now); l.mail = 'sent'; } catch (e) { l.mail = 'fail'; } } else l.mail = 'none';
+      res.push({ pid: l.pid, ok: true, req: reqId, mail: l.mail });
+    });
+    hoSave_(b);
+    return { ok: true, results: res };
+  } finally { lock.releaseLock(); }
+}
+/* Mistake: handed to the wrong person / wrong size. Voids the record (kept in the sheet and audit), the person gets a correction email. */
+function handoverUndo_(p, u) {
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const b = hoBatch_(p.batch); if (!b) return { ok: false, error: 'NOT_FOUND' };
+    if (!String(p.reason || '').trim()) return { ok: false, error: 'REASON_REQUIRED' };
+    const l = b.lines.filter(function (x) { return String(x.pid) === String(p.pid); })[0];
+    if (!l || !l.req) return { ok: false, error: 'NOT_FOUND' };
+    const row = findRow_('Requests', 1, l.req); if (!row) return { ok: false, error: 'NOT_FOUND' };
+    const r = getReq_(row);
+    setReq_(row, { Status: 'Voided', Note: 'VOID: ' + String(p.reason).slice(0, 100) + ' (handover undone by ' + u.name + ')' });
+    audit_(l.req, 'HANDOVER_UNDONE', u.name, l.name + ' / ' + p.reason);
+    if (r.Email) { try { mail_(r.Email, 'PPE handover cancelled – ' + l.req, tpl_('Handover cancelled / Serah terima dibatalkan', '<p>Dear ' + esc_(l.name) + ',</p><p>The handover <b>' + esc_(l.req) + '</b> was recorded in error and has been cancelled. You will be told if anything else is needed.<br>Serah terima ini dicatat keliru dan telah dibatalkan.</p>')); } catch (e) { } }
+    l.req = ''; l.at = ''; l.mail = ''; l.signed = false; delete l.receipt; delete l.signedAt;
+    hoSave_(b);
+    return { ok: true };
+  } finally { lock.releaseLock(); }
+}
+/* The signed paper sheet (scan, photo or PDF). 'signed' = people whose signature is on it; they are ticked as Signed. Others stay open. */
+function handoverUpload_(p, u) {
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const b = hoBatch_(p.batch); if (!b) return { ok: false, error: 'NOT_FOUND' };
+    const f = p.file || {}, mime = String(f.mime || '').toLowerCase(), b64 = String(f.b64 || '');
+    if (!b64 || DO_MIME.indexOf(mime) < 0) return { ok: false, error: 'DO_FILE_REQUIRED' };
+    if (b64.length > DO_MAX_B64) return { ok: false, error: 'DO_FILE_BIG' };
+    let bytes, fileId, key;
+    const n = hoRows_('HandoverFiles').filter(function (x) { return x.BatchID === b.id; }).length + 1;
+    key = b.id + '-F' + n;
+    try {
+      bytes = Utilities.base64Decode(b64);
+      const ext = mime === 'application/pdf' ? 'pdf' : mime === 'image/png' ? 'png' : 'jpg';
+      fileId = doFolder_().createFile(Utilities.newBlob(bytes, mime, key + '_signed.' + ext)).getId();
+    } catch (e) { return { ok: false, error: 'DO_FAILED' }; }
+    const hash = bytesHash_(bytes), now = new Date(), signed = (p.signed || []).map(String);
+    hoSheet_('HandoverFiles').appendRow([key, b.id, String(f.name || '').slice(0, 80), mime, fileId, hash, u.name, now]);
+    let k = 0;
+    b.lines.forEach(function (l) {
+      if (!l.req || l.signed || signed.indexOf(String(l.pid)) < 0) return;
+      l.signed = true; l.signedAt = now.toISOString(); l.file = key; k++;
+      const row = findRow_('Requests', 1, l.req);
+      if (row) { const r = getReq_(row); setReq_(row, { Flags: (String(r.Flags).replace(/\s*SIGNED/g, '') + ' SIGNED').trim(), Note: String(r.Note || '') + ' | Signed sheet ' + key }); }
+    });
+    hoSave_(b);
+    audit_(b.id, 'HANDOVER_SIGNED_SHEET', u.name, key + ' / ' + k + ' signed / sha256 ' + hash.slice(0, 12));
+    return { ok: true, key: key, signed: k };
+  } finally { lock.releaseLock(); }
+}
+function handoverFile_(p) {
+  const d = hoRows_('HandoverFiles').filter(function (x) { return x.FileKey === String(p.id || ''); })[0];
+  if (!d) return { ok: false, error: 'NOT_FOUND' };
+  try {
+    const bytes = DriveApp.getFileById(d.FileId).getBlob().getBytes();
+    return { ok: true, name: d.FileName || (d.FileKey + '.' + (d.FileMime === 'application/pdf' ? 'pdf' : 'jpg')), mime: d.FileMime, b64: Utilities.base64Encode(bytes), verified: bytesHash_(bytes) === String(d.FileHash) };
+  } catch (e) { return { ok: false, error: 'DO_FAILED' }; }
+}
+
 /* Admin: switch an item between "approval required" and "self-service (no approval)". */
 function itemApproval_(p, u) {
   const v = String(p.approval).toLowerCase() === 'no' ? 'No' : String(p.approval).toLowerCase() === 'yes' ? 'Yes' : '';
@@ -737,9 +892,10 @@ function report_(u) {
   all.forEach(function (r) {
     cnt[r.Status] = (cnt[r.Status] || 0) + 1;
     byReason[r.Reason] = (byReason[r.Reason] || 0) + 1;
-    if (r.ApprovedAt && r.Status !== 'Rejected') { a1 += (new Date(r.ApprovedAt) - new Date(r.CreatedAt)) / 3600000; n1++; }
+    const direct = /DIRECT/.test(String(r.Flags));
+    if (!direct && r.ApprovedAt && r.Status !== 'Rejected') { a1 += (new Date(r.ApprovedAt) - new Date(r.CreatedAt)) / 3600000; n1++; }
     if (r.Status === 'Issued') {
-      a2 += (new Date(r.IssuedAt) - new Date(r.ApprovedAt)) / 3600000; n2++;
+      if (!direct) { a2 += (new Date(r.IssuedAt) - new Date(r.ApprovedAt)) / 3600000; n2++; }
       const m = Utilities.formatDate(new Date(r.IssuedAt), 'Asia/Jakarta', 'yyyy-MM');
       JSON.parse(r.ApprovedItems).forEach(function (i) {
         byMonth[m] = (byMonth[m] || 0) + i.qty; byItem[i.item] = (byItem[i.item] || 0) + i.qty; byCo[r.Company] = (byCo[r.Company] || 0) + i.qty;
