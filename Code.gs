@@ -1,4 +1,4 @@
-const VERSION = '2.16.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
+const VERSION = '2.17.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
@@ -13,7 +13,7 @@ const MAX_OPEN_PER_SPONSOR = 5;
 const AUTO_MAX_QTY = 10;    // max quantity per line for items that need no approval
 const EMP_LOAN_DAYS = 30;   // employee loans (e.g. full body harness): reminder only after this many days
 const SHEETS = {
-  Personnel: ['PersonID', 'Name', 'Company', 'Role', 'Email', 'Active', 'Sponsor', 'Pool'],
+  Personnel: ['PersonID', 'Name', 'Company', 'Role', 'Email', 'Active', 'Sponsor', 'Pool', 'TrainingExempt'],   // TrainingExempt = Yes: no PPE training needed before a request (e.g. senior leadership)
   Items: ['Item', 'Category', 'Sizes', 'ServiceLifeDays', 'Kit', 'Loan', 'Approval'],
   Stock: ['Item', 'Size', 'OnHand', 'MinLevel', 'Pool'],
   StockLog: ['Timestamp', 'Item', 'Size', 'Change', 'Reason', 'Ref', 'Actor', 'Pool'],
@@ -182,6 +182,7 @@ function doPost(e) {
       case 'handoverUndo': return json_(handoverUndo_(p, u));
       case 'handoverUpload': return json_(handoverUpload_(p, u));
       case 'handoverFile': return json_(handoverFile_(p));
+      case 'trainExempt': return json_(trainExempt_(p, u));
     }
     return json_({ ok: false, error: 'UNKNOWN_ACTION' });
   } catch (err) {
@@ -399,6 +400,20 @@ function submit_(p) {
       }
     }
     const all = rows_('Requests');
+    // PPE training gate (procedure 5.2.1): a valid pass (80%+, last 12 months) is needed before a request, unless the person is exempt.
+    // Urgent exception: a replacement (worn / damaged / lost) is released at once but training must follow within TRAIN_GRACE_DAYS.
+    if (!trainExempt0_(per)) {
+      const tr = trainStatus_(per.PersonID, per.Name);
+      if (!tr.valid) {
+        const urgentOk = (p.reason === 'Replacement-Worn' || p.reason === 'Replacement-Damaged' || p.reason === 'Lost');
+        if (!(p.trainUrgent && urgentOk)) return { ok: false, error: 'TRAINING_REQUIRED', urgentOk: urgentOk };
+        const pend = all.filter(function (r) { return String(r.Flags).indexOf('TRAINING_PENDING') >= 0 && (per.PersonID !== 'NEW' ? String(r.PersonID) === String(per.PersonID) : (String(r.PersonID) === 'NEW' && String(r.Name).toLowerCase() === per.Name.toLowerCase())); })
+          .map(function (r) { return new Date(r.CreatedAt); }).sort(function (x, y) { return x - y; });
+        const start = pend.length ? pend[0] : new Date();
+        if (pend.length && (Date.now() - start) / 86400000 > TRAIN_GRACE_DAYS) return { ok: false, error: 'TRAINING_OVERDUE' };
+        base.push('TRAINING_PENDING|' + Utilities.formatDate(new Date(start.getTime() + TRAIN_GRACE_DAYS * 86400000), 'Asia/Jakarta', 'dd MMM yyyy'));
+      }
+    }
     if (!per.Email) {   // no email on file: a sponsor receives the code and is accountable
       sponsor = rows_('Personnel').filter(function (x) { return String(x.PersonID) === String(p.sponsorId) && String(x.Active).toLowerCase() !== 'no' && String(x.Sponsor).toLowerCase() === 'yes' && x.Email && isProjectPerson_(x); })[0];
       if (!sponsor) return { ok: false, error: 'SPONSOR_REQUIRED' };
@@ -1122,6 +1137,31 @@ function careMail_(items) {
 
 /* ================= New-joiner training record (v2.7) ================= */
 const TRAIN_MODULE = 'New-joiner PPE training v1';
+const TRAIN_PASS_PCT = 0.8, TRAIN_VALID_DAYS = 365, TRAIN_GRACE_DAYS = 7;   // procedure 5.2.1: refresher at least annually
+function trainExempt0_(per) { return String(per && per.TrainingExempt).trim().toLowerCase() === 'yes'; }
+/* Latest passing record for a person (by PersonID; people not in the register by name). valid = 80%+ and within TRAIN_VALID_DAYS. */
+function trainStatus_(pid, name, trows) {
+  const nm = String(name || '').trim().toLowerCase(); let best = null;
+  (trows || rows_('Training')).forEach(function (t) {
+    const same = String(pid) !== 'NEW' ? String(t.PersonID) === String(pid) : (String(t.PersonID) === 'NEW' && String(t.Name).trim().toLowerCase() === nm);
+    if (!same || !(Number(t.Total) > 0) || Number(t.Score) / Number(t.Total) < TRAIN_PASS_PCT) return;
+    const d = new Date(t.Timestamp); if (!best || d > best) best = d;
+  });
+  if (!best) return { valid: false, status: 'None' };
+  const until = new Date(best.getTime() + TRAIN_VALID_DAYS * 86400000);
+  return { valid: until > new Date(), status: until > new Date() ? 'Valid' : 'Expired', last: best, until: until };
+}
+/* Approver: tick / untick a person as exempt from PPE training. */
+function trainExempt_(p, u) {
+  const sh = sh_('Personnel'), v = sh.getDataRange().getValues(), ic = v[0].indexOf('PersonID'), ec = v[0].indexOf('TrainingExempt');
+  if (ec < 0) return { ok: false, error: 'SETUP_NEEDED' };
+  for (let i = 1; i < v.length; i++) if (String(v[i][ic]) === String(p.personId)) {
+    sh.getRange(i + 1, ec + 1).setValue(p.exempt ? 'Yes' : '');
+    audit_('TRAINING', p.exempt ? 'TRAINING_EXEMPT' : 'TRAINING_EXEMPT_REMOVED', u.name, String(v[i][v[0].indexOf('Name')]));
+    return { ok: true };
+  }
+  return { ok: false, error: 'PERSON_NOT_FOUND' };
+}
 function trainDone_(p) {
   const score = Math.floor(Number(p.score)), total = Math.floor(Number(p.total));
   if (!(total > 0 && total <= 50) || !(score >= 0) || score > total) return { ok: false, error: 'BAD_INPUT' };
@@ -1134,10 +1174,16 @@ function trainDone_(p) {
     name = String(p.name || '').trim().slice(0, 80); co = String(p.company || '').trim().slice(0, 60);
     if (!name || !co) return { ok: false, error: 'DETAILS_REQUIRED' };
   }
-  sh_('Training').appendRow([new Date(), pid, name, co, score, total, TRAIN_MODULE]);
+  if (score / total < TRAIN_PASS_PCT) return { ok: false, error: 'TRAIN_NOT_PASSED' };
+  const now = new Date();
+  sh_('Training').appendRow([now, pid, name, co, score, total, TRAIN_MODULE]);
   audit_('TRAINING', 'TRAINING_DONE', name, score + '/' + total);
-  return { ok: true };
+  return { ok: true, until: new Date(now.getTime() + TRAIN_VALID_DAYS * 86400000) };
 }
 function training_() {
-  return { ok: true, records: rows_('Training').map(function (t) { return { Timestamp: t.Timestamp, PersonID: t.PersonID, Name: t.Name, Company: t.Company, Score: t.Score, Total: t.Total }; }).reverse().slice(0, 400) };
+  const tr = rows_('Training'), ppl = rows_('Personnel').filter(function (x) { return String(x.Active).toLowerCase() !== 'no' && isProjectPerson_(x); }).map(function (x) {
+    const ex = trainExempt0_(x), st = trainStatus_(x.PersonID, x.Name, tr);
+    return { PersonID: x.PersonID, Name: x.Name, Company: x.Company, Exempt: ex, Status: ex ? 'Exempt' : st.status, Until: st.until || '' };
+  });
+  return { ok: true, people: ppl, records: rows_('Training').map(function (t) { return { Timestamp: t.Timestamp, PersonID: t.PersonID, Name: t.Name, Company: t.Company, Score: t.Score, Total: t.Total }; }).reverse().slice(0, 400) };
 }
