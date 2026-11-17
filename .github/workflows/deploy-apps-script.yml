@@ -21,8 +21,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      SCRIPT_ID: "PASTE_SCRIPT_ID_HERE"
-      DEPLOYMENT_ID: "PASTE_DEPLOYMENT_ID_HERE"
+      SCRIPT_ID: "1guRPfwnMKN4L6UoOU1dR7YDbt-1wyrhOgP_wvhTBbOARdIiY5sTsm6To"
+      DEPLOYMENT_ID: "AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1"
     steps:
       - uses: actions/checkout@v4
 
