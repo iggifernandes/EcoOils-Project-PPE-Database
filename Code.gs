@@ -1,4 +1,4 @@
-const VERSION = '2.20.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
+const VERSION = '2.21.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
@@ -199,6 +199,7 @@ function doPost(e) {
       case 'handoverInfo': return json_(handoverInfo_());
       case 'handoverCreate': return json_(handoverCreate_(p, u));
       case 'handoverEdit': return json_(handoverEdit_(p, u));
+      case 'handoverEml': return json_(handoverEml_(p, u));
       case 'handoverGive': return json_(handoverGive_(p, u));
       case 'handoverUndo': return json_(handoverUndo_(p, u));
       case 'handoverUpload': return json_(handoverUpload_(p, u));
@@ -793,7 +794,7 @@ function handoverCreate_(p, u) {
       if (sizes.length && sizes.indexOf(sz) < 0) return { ok: false, error: 'BAD_LINE', detail: 'line ' + (i + 1) + ': size ' + sz };
       if (seen[per.PersonID]) return { ok: false, error: 'BAD_LINE', detail: 'line ' + (i + 1) + ': ' + per.Name + ' twice' };
       seen[per.PersonID] = 1;
-      lines.push({ pid: per.PersonID, name: per.Name, company: per.Company, size: sz, qty: q, nameOn: String(l.nameOn || '').slice(0, 30), req: '', at: '', mail: '', signed: false });
+      lines.push({ pid: per.PersonID, name: per.Name, company: per.Company, size: sz, qty: q, nameOn: String(l.nameOn || '').slice(0, 30), note: String(p.note || '').trim().slice(0, 500), req: '', at: '', mail: '', signed: false });
     }
     const dd = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyMMdd'), n = hoRows_('Handovers').filter(function (x) { return String(x.BatchID).indexOf('HB-' + dd) === 0; }).length + 1;
     const id = 'HB-' + dd + '-' + ('0' + n).slice(-2);
@@ -820,17 +821,39 @@ function handoverEdit_(p, u) {
       if (String(l.size || '') !== sz || Number(l.qty) !== q) changes.push(l.name + ' ' + (l.size || '-') + 'x' + l.qty + ' -> ' + (sz || '-') + 'x' + q);
       l.size = sz; l.qty = q;
     }
+    if (p.note !== undefined) {
+      const nt = String(p.note || '').trim().slice(0, 500);
+      b.lines.forEach(function (l) { if (!l.req && String(l.note || '') !== nt) { l.note = nt; if (changes.indexOf('note') < 0) changes.push('note'); } });
+    }
     if (changes.length) { hoSave_(b); audit_(b.id, 'HANDOVER_EDIT', u.name, changes.join('; ').slice(0, 450)); }
     return { ok: true, changed: changes.length };
   } finally { lock.releaseLock(); }
 }
-function handoverMail_(per, line, item, reqId, receipt, by, now) {
+function handoverMsg_(per, line, item, reqId, receipt, by, now) {
   const txt = line.qty + ' x ' + item + (line.size ? ' (' + line.size + ')' : '');
-  mail_(per.Email, 'PPE handed over – ' + txt + ' – ' + reqId, tpl_('PPE Handed Over / APD Diserahkan',
-    '<p>Dear ' + esc_(per.Name) + ',</p><p>You were handed / Anda menerima:</p><p><b>' + esc_(txt) + '</b>' + (line.nameOn ? '<br>Name on item / Nama pada item: <b>' + esc_(line.nameOn) + '</b>' : '') + '</p>' +
+  const note = String(line.note || '').trim() ? '<p style="background:#fff7e0;padding:8px 12px;border-radius:8px"><b>Note / Catatan:</b><br>' + esc_(line.note).replace(/\n/g, '<br>') + '</p>' : '';
+  return { subject: 'PPE handed over – ' + txt + ' – ' + reqId, html: tpl_('PPE Handed Over / APD Diserahkan',
+    '<p>Dear ' + esc_(per.Name) + ',</p><p>You were handed / Anda menerima:</p><p><b>' + esc_(txt) + '</b>' + (line.nameOn ? '<br>Name on item / Nama pada item: <b>' + esc_(line.nameOn) + '</b>' : '') + '</p>' + note +
     '<p>Handed over by / Diserahkan oleh: ' + esc_(by) + '<br>' + fmt_(now) + '<br>Ref: ' + reqId + '<br>Receipt / Bukti: <b>' + receipt + '</b></p>' +
     '<p style="background:#e8f3ee;padding:8px 12px;border-radius:8px">Your signature on the handover sheet confirms you received it. / Tanda tangan Anda pada lembar serah terima menegaskan bahwa Anda telah menerimanya.</p>' +
-    careMail_([{ item: item }]) + '<p style="font-size:13px;color:#555">If this is wrong, contact HSSE immediately. / Jika tidak benar, hubungi HSSE segera.</p>'));
+    careMail_([{ item: item }]) + '<p style="font-size:13px;color:#555">If this is wrong, contact HSSE immediately. / Jika tidak benar, hubungi HSSE segera.</p>') };
+}
+function handoverMail_(per, line, item, reqId, receipt, by, now) {
+  const m = handoverMsg_(per, line, item, reqId, receipt, by, now);
+  mail_(per.Email, m.subject, m.html);
+}
+/* .eml draft of the handover email for one person (approver only). Opens in Outlook / Mail as an unsent draft ("X-Unsent") so it can be corrected and sent by hand. Nothing is sent from here. */
+function handoverEml_(p, u) {
+  const b = hoBatch_(p.batch); if (!b) return { ok: false, error: 'NOT_FOUND' };
+  const l = b.lines.filter(function (x) { return String(x.pid) === String(p.pid); })[0]; if (!l) return { ok: false, error: 'NOT_FOUND' };
+  const per = rows_('Personnel').filter(function (x) { return String(x.PersonID) === String(l.pid); })[0] || { Name: l.name, Email: '' };
+  const now = l.at ? new Date(l.at) : new Date();
+  const m = handoverMsg_(per, l, b.item, l.req || '(pending)', l.receipt || '(issued on handover)', u.name, now);
+  const b64 = Utilities.base64Encode(Utilities.newBlob(m.html).getBytes()).replace(/(.{76})/g, '$1\r\n');
+  const eml = ['X-Unsent: 1', 'To: ' + String(per.Email || ''), 'Subject: =?UTF-8?B?' + Utilities.base64Encode(Utilities.newBlob(m.subject).getBytes()) + '?=', 'MIME-Version: 1.0',
+    'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', b64, ''].join('\r\n');
+  audit_(l.req || b.id, 'HANDOVER_EML', u.name, l.name);
+  return { ok: true, name: ('Handover_' + (l.req || b.id) + '_' + String(l.name).replace(/[^A-Za-z0-9]+/g, '_') + '.eml'), b64: Utilities.base64Encode(Utilities.newBlob(eml).getBytes()) };
 }
 function handoverGive_(p, u) {
   const lock = LockService.getScriptLock(); lock.waitLock(20000);

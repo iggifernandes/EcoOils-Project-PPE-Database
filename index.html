@@ -96,7 +96,7 @@ header.eh .eh-l button.on,header.eh .eh-l button.active,header.eh .eh-l button[a
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.22.0';
+const VERSION = 'v2.23.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -233,6 +233,9 @@ Object.assign(T.ms,{poolL:'Pool',p_Project:'Projek',p_Asset:'Aset',p_All:'Semua'
  singleAdd:'Tambah satu item',poolLoans:'Pinjaman pool (antara Projek dan Aset)',poolLoansNote:'Apabila satu pool kekurangan, stor boleh mengeluarkan dari pool lain. Direkodkan di sini. Bayar balik apabila stok baharu tiba – stok bergerak balik secara automatik.',repay:'Bayar balik',repayQty:'Berapa banyak dibayar balik?',leftL:'baki',lentBy:'dipinjamkan oleh',toL:'ke',noDebts:'Tiada pinjaman pool terbuka.',settled:'Selesai',
  borrowQ:'Stok dalam pool pemohon tidak mencukupi. Keluarkan dari pool lain dan rekod sebagai pinjaman pool untuk dibayar balik kemudian?',borrowedL:'Dipinjam dari pool lain',lendPool:'Ambil stok dari'});
 Object.assign(T.ms.ERR,{POOL_SHORT:'Stok dalam pool ini tidak mencukupi.',WRONG_POOL:'Permintaan ini milik pool lain – pelulus lain mengendalikannya.',BAD_LINE:'Semak baris muat naik ini.',ALREADY_SETTLED:'Sudah selesai.'});
+Object.assign(T.en,{hoNote:'Notes (sent in the handover email)',hoNoteHint:'e.g. Please check the size and report any fault within 7 days.',hoEml:'.eml'});
+Object.assign(T.id,{hoNote:'Catatan (dikirim di email serah terima)',hoNoteHint:'mis. Mohon periksa ukuran dan laporkan kerusakan dalam 7 hari.',hoEml:'.eml'});
+if(T.ms) Object.assign(T.ms,{hoNote:'Nota (dihantar dalam e-mel serahan)',hoNoteHint:'cth. Sila semak saiz dan laporkan kerosakan dalam 7 hari.',hoEml:'.eml'});
 Object.assign(T.en,{hoSaveEdit:'Save size / qty changes',hoEdited:'Lines changed'});
 Object.assign(T.id,{hoSaveEdit:'Simpan perubahan ukuran / jumlah',hoEdited:'Baris diubah'});
 if(T.ms) Object.assign(T.ms,{hoSaveEdit:'Simpan perubahan saiz / kuantiti',hoEdited:'Baris diubah'});
@@ -725,6 +728,7 @@ function hoRender(){
   <div class="card"><b>${t('hoNew')}</b>
   <label>${t('hoItem')}</label><select id="hoI" onchange="hoItemChg()">${opts}</select>
   <label>${t('hoTitle')}</label><input id="hoT" maxlength="80">
+  <label>${t('hoNote')}</label><textarea id="hoNt" rows="3" maxlength="500" placeholder="${t('hoNoteHint')}"></textarea>
   <label>${t('hoPaste')}</label><textarea id="hoTx" rows="6" placeholder="ASIF IQBAL, XL, 2, ASIF"></textarea>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="s" onclick="hoTpl()">${t('hoTpl')}</button></div>
   <label>CSV</label><input type="file" accept=".csv,text/csv,.txt" onchange="hoCsv(this)">
@@ -761,7 +765,7 @@ function hoChkRender(){
     ${ok?'':`<div class="err">${t('hoNeedAll')}</div>`}<button class="p" ${ok?'':'disabled'} onclick="hoCreate()">${t('hoCreate')}</button><div id="hoMsg"></div>`;
 }
 async function hoCreate(){
-  const r=await api({action:'handoverCreate',pin:S.pin,item:$('hoI').value,title:$('hoT').value.trim(),lines:HO.rows.map(x=>({pid:x.pid,size:x.size,qty:x.qty,nameOn:x.nameOn}))});
+  const r=await api({action:'handoverCreate',pin:S.pin,item:$('hoI').value,title:$('hoT').value.trim(),note:($('hoNt')||{value:''}).value.trim(),lines:HO.rows.map(x=>({pid:x.pid,size:x.size,qty:x.qty,nameOn:x.nameOn}))});
   if(!r.ok) return $('hoMsg').innerHTML='<div class="err">'+E(r)+'</div>';
   HO.rows=[]; vHandover();
 }
@@ -771,8 +775,9 @@ function hoBatchHtml(b){
   return `<div class="card" id="hb_${id}"><b>${esc(b.Title||b.Item)}</b> <span class="small">· ${id}</span><br><span class="small">${esc(b.Item)} · ${L.length} · ${fmt(b.CreatedAt).slice(0,11)}</span>
   <div style="margin:8px 0"><span class="pill ${given===L.length?'Issued':'Approved'}">${t('hoGiven')} ${given}/${L.length}</span> <span class="pill ${signed===L.length?'Issued':'Requested'}">${t('hoSigned')} ${signed}/${L.length}</span></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="s" onclick="hoPrint('${id}')">${t('hoPrint')}</button>${open?`<button class="s" onclick="hoTickAll('${id}')">${t('hoAll')}</button>`:''}</div>
+  ${open?`<label>${t('hoNote')}</label><textarea id="hn_${id}" rows="2" maxlength="500" placeholder="${t('hoNoteHint')}">${esc((L.find(l=>!l.req&&l.note)||{}).note||'')}</textarea>`:''}
   <table style="margin-top:8px"><tr><th></th><th>${t('hoName')}</th><th>${t('size')}</th><th>${t('qty')}</th><th></th></tr>${L.map((l,i)=>`<tr><td>${l.req?'':`<input type="checkbox" class="hk_${id}" value="${esc(l.pid)}" style="width:auto">`}</td><td>${esc(l.name)}${l.nameOn?`<div class="small">${esc(l.nameOn)}</div>`:''}</td><td>${l.req?esc(l.size||'–'):hoSizeSel(b,l,id)}</td><td>${l.req?l.qty:`<input type="number" min="1" max="10" value="${l.qty}" class="hq_${id}" data-pid="${esc(l.pid)}" style="width:64px">`}</td>
-    <td class="small">${l.req?`<b style="color:#44a276">${t('hoGiven')}</b> ${fmt(l.at).slice(0,17)}<br>${l.mail==='sent'?t('hoMailSent'):l.mail==='none'?'<span style="color:#b42318">'+t('hoMailNone')+'</span>':l.mail==='fail'?'<span style="color:#b42318">'+t('hoMailFail')+'</span>':''}<br>${l.signed?'<b style="color:#44a276">✓ '+t('hoSigned')+'</b>':'<span style="color:#b42318">'+t('hoNotSigned')+'</span>'}<br><button class="s" style="min-height:28px;padding:0 8px" onclick="hoUndo('${id}','${esc(l.pid)}')">${t('hoUndo')}</button>`:''}</td></tr>`).join('')}</table>
+    <td class="small">${l.req?`<b style="color:#44a276">${t('hoGiven')}</b> ${fmt(l.at).slice(0,17)}<br>${l.mail==='sent'?t('hoMailSent'):l.mail==='none'?'<span style="color:#b42318">'+t('hoMailNone')+'</span>':l.mail==='fail'?'<span style="color:#b42318">'+t('hoMailFail')+'</span>':''}<br>${l.signed?'<b style="color:#44a276">✓ '+t('hoSigned')+'</b>':'<span style="color:#b42318">'+t('hoNotSigned')+'</span>'}<br><button class="s" style="min-height:28px;padding:0 8px" onclick="hoUndo('${id}','${esc(l.pid)}')">${t('hoUndo')}</button>`:''}<div><button class="s" style="min-height:28px;padding:0 8px;margin-top:4px" onclick="hoEml('${id}','${esc(l.pid)}')">${t('hoEml')}</button></div></td></tr>`).join('')}</table>
   ${open?`<button class="s" onclick="hoEditSave('${id}')">${t('hoSaveEdit')}</button> <button class="p" onclick="hoGive('${id}')">${t('hoTick')}</button>`:''}<div id="hg_${id}"></div>
   ${toSign.length||b.Files.length?`<details style="margin-top:10px" ${toSign.length?'open':''}><summary><b>${t('hoUpload')}</b></summary><div class="small">${t('hoUpHint')}</div>
     ${toSign.length?`<div class="small" style="margin-top:6px">${t('hoTickSigned')}:</div>${toSign.map(l=>`<label style="display:flex;gap:8px;align-items:center;color:#231f20"><input type="checkbox" class="sg_${id}" value="${esc(l.pid)}" checked style="width:auto"> ${esc(l.name)}</label>`).join('')}
@@ -790,10 +795,16 @@ function hoSizeSel(b,l,id){
 async function hoEditSave(id,silent){
   const qs=[...document.querySelectorAll('.hq_'+id)]; if(!qs.length) return true;
   const lines=qs.map(q=>{ const s=document.querySelector('.hs_'+id+'[data-pid="'+q.dataset.pid+'"]'); return {pid:q.dataset.pid,size:s?s.value:'',qty:Number(q.value)}; });
-  const r=await api({action:'handoverEdit',pin:S.pin,batch:id,lines}); const el=$('hg_'+id);
+  const nt=$('hn_'+id); const r=await api({action:'handoverEdit',pin:S.pin,batch:id,lines,note:nt?nt.value:undefined}); const el=$('hg_'+id);
   if(!r.ok){ if(el) el.innerHTML='<div class="err">'+E(r)+'</div>'; return false; }
   if(!silent){ await vHandover(); const e2=$('hg_'+id); if(e2) e2.innerHTML='<div class="small">'+t('hoEdited')+': '+r.changed+'</div>'; }
   return true;
+}
+async function hoEml(id,pid){
+  if(!(await hoEditSave(id,true))) return;
+  const r=await api({action:'handoverEml',pin:S.pin,batch:id,pid}); if(!r.ok) return alert(err(r.error));
+  const bin=atob(r.b64), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([u8],{type:'message/rfc822'})); a.download=r.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
 }
 async function hoGive(id){
   if(!(await hoEditSave(id,true))) return;
