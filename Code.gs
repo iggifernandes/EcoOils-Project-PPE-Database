@@ -1,4 +1,4 @@
-const VERSION = '2.18.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
+const VERSION = '2.19.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
@@ -132,9 +132,25 @@ function loadProcedureCatalog() {
 }
 
 /* ================= Entry points ================= */
-function doGet() { return json_({ ok: true, app: 'PPE', version: VERSION }); }
+/* Self-sync after every deploy: the first request after a new version applies the TEAM list (loadTeamUsers) by itself, so nobody has to run it by hand.
+ * Runs as the script owner (web app = Execute as Me). Only the code-defined TEAM is applied; no request input can change what it does. */
+function autoSync_() {
+  try {
+    const pr = PropertiesService.getScriptProperties();
+    if (pr.getProperty('TEAM_SYNC_VER') === VERSION) return;
+    const lock = LockService.getScriptLock();
+    if (!lock.tryLock(15000)) return;
+    try {
+      if (pr.getProperty('TEAM_SYNC_VER') === VERSION) return;
+      loadTeamUsers();
+      pr.setProperty('TEAM_SYNC_VER', VERSION);
+    } finally { lock.releaseLock(); }
+  } catch (err) { /* never block a request because of the sync; it retries on the next request */ }
+}
+function doGet() { autoSync_(); return json_({ ok: true, app: 'PPE', version: VERSION, teamSynced: PropertiesService.getScriptProperties().getProperty('TEAM_SYNC_VER') === VERSION }); }
 
 function doPost(e) {
+  autoSync_();
   try {
     const p = JSON.parse(e.postData.contents);
     // ---- public (employee) ----
