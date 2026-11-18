@@ -1,4 +1,4 @@
-const VERSION = '2.17.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
+const VERSION = '2.18.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
@@ -103,22 +103,26 @@ function setup() {
 
 /* Run once (or any time): adds / updates the team in Users. Staff log in with their EMAIL + a one-time code that is emailed to them (no PINs). */
 const TEAM = [
-  ['Iggy', 'approver', 'Ignatius.Ambrosio@ecooils.com.my', 'Project'],
-  ['Store 1 – Anthony Akbar', 'store', 'Anthony.Akbar@ecooils.co.id', 'All'],
-  ['Store 2 – Edolando Sembiring', 'store', 'Edolando.Sembiring@ecooils.co.id', 'All']
+  ['Iggy', 'approver', 'Ignatius.Ambrosio@ecooils.com.my', 'Project'],   // Admin: approver + owner (OWNER_EMAILS), sees and can do everything in the staff app
+  ['Anthony Akbar – Store Supervisor', 'store', 'Anthony.Akbar@ecooils.co.id', 'All'],
+  ['Edolando Sembiring – Store Assistant', 'store', 'Edolando.Sembiring@ecooils.co.id', 'All']
 ];
-const RETIRED = ['irfan.amin@ecooils.co.id'];   // Asset approver: no longer part of this app (switched off, row kept)
+const RETIRED = ['irfan.amin@ecooils.co.id'];   // Asset approver: not part of this app (switched off, row kept)
 function loadTeamUsers() {
   const sh = sh_('Users'), h = SHEETS.Users;
   { const v0 = sh.getDataRange().getValues(), e0 = v0[0].indexOf('Email'), a0 = v0[0].indexOf('Active'); for (let i = 1; i < v0.length; i++) if (RETIRED.indexOf(String(v0[i][e0]).toLowerCase()) >= 0) sh.getRange(i + 1, a0 + 1).setValue('No'); }
   TEAM.forEach(function (m, k) {
     const v = sh.getDataRange().getValues(), eIdx = v[0].indexOf('Email'), nIdx = v[0].indexOf('Name');
     let row = 0;
-    for (let i = 1; i < v.length; i++) if (String(v[i][eIdx]).toLowerCase() === m[2].toLowerCase() || String(v[i][nIdx]) === m[0] || (k === 2 && String(v[i][nIdx]) === 'Store 1')) { row = i + 1; break; }
+    for (let i = 1; i < v.length; i++) if (String(v[i][eIdx]).toLowerCase() === m[2].toLowerCase() || String(v[i][nIdx]) === m[0] || (k === 1 && String(v[i][nIdx]).indexOf('Anthony') >= 0) || (k === 2 && String(v[i][nIdx]).indexOf('Edolando') >= 0)) { row = i + 1; break; }
     const rowVals = { Name: m[0], Role: m[1], Active: 'Yes', Email: m[2], Pool: m[3] };
     if (!row) { const nr = h.map(function (c) { return c === 'PIN' ? '' : (rowVals[c] !== undefined ? rowVals[c] : ''); }); sh.appendRow(nr); }
     else Object.keys(rowVals).forEach(function (c) { sh.getRange(row, v[0].indexOf(c) + 1).setValue(rowVals[c]); });
   });
+  /* Whitelist: ONLY the people in TEAM may log in to the staff app. Every other Users row is switched off (rows are kept). */
+  const allowed = TEAM.map(function (m) { return m[2].toLowerCase(); });
+  const v2 = sh.getDataRange().getValues(), e2 = v2[0].indexOf('Email'), a2 = v2[0].indexOf('Active');
+  for (let i = 1; i < v2.length; i++) if (allowed.indexOf(String(v2[i][e2]).trim().toLowerCase()) < 0 && String(v2[i][a2]).toLowerCase() !== 'no') sh.getRange(i + 1, a2 + 1).setValue('No');
 }
 
 /* Run once to REPLACE the Items tab with the procedure-based catalogue (v2.7). Re-enter opening stock for renamed items afterwards. */
