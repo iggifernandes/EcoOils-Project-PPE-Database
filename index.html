@@ -96,7 +96,7 @@ header.eh .eh-l button.on,header.eh .eh-l button.active,header.eh .eh-l button[a
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.21.0';
+const VERSION = 'v2.22.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -233,6 +233,9 @@ Object.assign(T.ms,{poolL:'Pool',p_Project:'Projek',p_Asset:'Aset',p_All:'Semua'
  singleAdd:'Tambah satu item',poolLoans:'Pinjaman pool (antara Projek dan Aset)',poolLoansNote:'Apabila satu pool kekurangan, stor boleh mengeluarkan dari pool lain. Direkodkan di sini. Bayar balik apabila stok baharu tiba – stok bergerak balik secara automatik.',repay:'Bayar balik',repayQty:'Berapa banyak dibayar balik?',leftL:'baki',lentBy:'dipinjamkan oleh',toL:'ke',noDebts:'Tiada pinjaman pool terbuka.',settled:'Selesai',
  borrowQ:'Stok dalam pool pemohon tidak mencukupi. Keluarkan dari pool lain dan rekod sebagai pinjaman pool untuk dibayar balik kemudian?',borrowedL:'Dipinjam dari pool lain',lendPool:'Ambil stok dari'});
 Object.assign(T.ms.ERR,{POOL_SHORT:'Stok dalam pool ini tidak mencukupi.',WRONG_POOL:'Permintaan ini milik pool lain – pelulus lain mengendalikannya.',BAD_LINE:'Semak baris muat naik ini.',ALREADY_SETTLED:'Sudah selesai.'});
+Object.assign(T.en,{hoSaveEdit:'Save size / qty changes',hoEdited:'Lines changed'});
+Object.assign(T.id,{hoSaveEdit:'Simpan perubahan ukuran / jumlah',hoEdited:'Baris diubah'});
+if(T.ms) Object.assign(T.ms,{hoSaveEdit:'Simpan perubahan saiz / kuantiti',hoEdited:'Baris diubah'});
 Object.assign(T.en,{emailStaff:'Your work email',sendCode:'Send me a login code',codeSentTo:'A 6-digit code was sent to',enterCode:'Enter the code',verify:'Log in',changeEmail:'Use another email',sessionEnded:'Your session ended. Please log in again.'});
 Object.assign(T.en.ERR,{BAD_EMAIL:'Enter a valid email.',BAD_CODE:'Wrong code.',CODE_EXPIRED:'The code expired. Ask for a new one.',LOCKED_TRY_LATER:'Too many tries. Please wait a while.',EMAIL_FAILED:'The email could not be sent. Try again.',SESSION_EXPIRED:'Your session ended. Please log in again.'});
 Object.assign(T.id,{emailStaff:'Email kerja Anda',sendCode:'Kirim kode masuk',codeSentTo:'Kode 6 digit dikirim ke',enterCode:'Masukkan kode',verify:'Masuk',changeEmail:'Pakai email lain',sessionEnded:'Sesi berakhir. Silakan masuk lagi.'});
@@ -768,9 +771,9 @@ function hoBatchHtml(b){
   return `<div class="card" id="hb_${id}"><b>${esc(b.Title||b.Item)}</b> <span class="small">· ${id}</span><br><span class="small">${esc(b.Item)} · ${L.length} · ${fmt(b.CreatedAt).slice(0,11)}</span>
   <div style="margin:8px 0"><span class="pill ${given===L.length?'Issued':'Approved'}">${t('hoGiven')} ${given}/${L.length}</span> <span class="pill ${signed===L.length?'Issued':'Requested'}">${t('hoSigned')} ${signed}/${L.length}</span></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="s" onclick="hoPrint('${id}')">${t('hoPrint')}</button>${open?`<button class="s" onclick="hoTickAll('${id}')">${t('hoAll')}</button>`:''}</div>
-  <table style="margin-top:8px"><tr><th></th><th>${t('hoName')}</th><th>${t('size')}</th><th>${t('qty')}</th><th></th></tr>${L.map((l,i)=>`<tr><td>${l.req?'':`<input type="checkbox" class="hk_${id}" value="${esc(l.pid)}" style="width:auto">`}</td><td>${esc(l.name)}${l.nameOn?`<div class="small">${esc(l.nameOn)}</div>`:''}</td><td>${esc(l.size||'–')}</td><td>${l.qty}</td>
+  <table style="margin-top:8px"><tr><th></th><th>${t('hoName')}</th><th>${t('size')}</th><th>${t('qty')}</th><th></th></tr>${L.map((l,i)=>`<tr><td>${l.req?'':`<input type="checkbox" class="hk_${id}" value="${esc(l.pid)}" style="width:auto">`}</td><td>${esc(l.name)}${l.nameOn?`<div class="small">${esc(l.nameOn)}</div>`:''}</td><td>${l.req?esc(l.size||'–'):hoSizeSel(b,l,id)}</td><td>${l.req?l.qty:`<input type="number" min="1" max="10" value="${l.qty}" class="hq_${id}" data-pid="${esc(l.pid)}" style="width:64px">`}</td>
     <td class="small">${l.req?`<b style="color:#44a276">${t('hoGiven')}</b> ${fmt(l.at).slice(0,17)}<br>${l.mail==='sent'?t('hoMailSent'):l.mail==='none'?'<span style="color:#b42318">'+t('hoMailNone')+'</span>':l.mail==='fail'?'<span style="color:#b42318">'+t('hoMailFail')+'</span>':''}<br>${l.signed?'<b style="color:#44a276">✓ '+t('hoSigned')+'</b>':'<span style="color:#b42318">'+t('hoNotSigned')+'</span>'}<br><button class="s" style="min-height:28px;padding:0 8px" onclick="hoUndo('${id}','${esc(l.pid)}')">${t('hoUndo')}</button>`:''}</td></tr>`).join('')}</table>
-  ${open?`<button class="p" onclick="hoGive('${id}')">${t('hoTick')}</button>`:''}<div id="hg_${id}"></div>
+  ${open?`<button class="s" onclick="hoEditSave('${id}')">${t('hoSaveEdit')}</button> <button class="p" onclick="hoGive('${id}')">${t('hoTick')}</button>`:''}<div id="hg_${id}"></div>
   ${toSign.length||b.Files.length?`<details style="margin-top:10px" ${toSign.length?'open':''}><summary><b>${t('hoUpload')}</b></summary><div class="small">${t('hoUpHint')}</div>
     ${toSign.length?`<div class="small" style="margin-top:6px">${t('hoTickSigned')}:</div>${toSign.map(l=>`<label style="display:flex;gap:8px;align-items:center;color:#231f20"><input type="checkbox" class="sg_${id}" value="${esc(l.pid)}" checked style="width:auto"> ${esc(l.name)}</label>`).join('')}
     <div class="drop" id="dz_${id}" ondragover="event.preventDefault();this.classList.add('on')" ondragleave="this.classList.remove('on')" ondrop="event.preventDefault();this.classList.remove('on');hoAddFiles('${id}',event.dataTransfer.files)">${t('hoDrop')}<br><label class="s" style="display:inline-block;margin-top:6px;padding:6px 14px;border:1px solid var(--l);border-radius:8px;cursor:pointer">${t('hoAddMore')}<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="hoAddFiles('${id}',this.files);this.value=''"></label><div id="fl_${id}" class="small"></div></div>
@@ -778,7 +781,22 @@ function hoBatchHtml(b){
     ${b.Files.length?`<div class="small" style="margin-top:8px"><b>${t('hoFiles')}</b></div>${b.Files.map(f=>`<div class="small">${esc(f.FileName||f.FileKey)} · ${fmt(f.UploadedAt).slice(0,17)} · ${esc(f.UploadedBy)} <button class="s" style="min-height:28px;padding:0 8px" onclick="hoView('${esc(f.FileKey)}')">${t('hoView')}</button></div>`).join('')}`:''}</details>`:''}</div>`;
 }
 function hoTickAll(id){ document.querySelectorAll('.hk_'+id).forEach(c=>c.checked=true); }
+function hoSizeSel(b,l,id){
+  const it=(HO.info&&HO.info.items||[]).find(i=>i.Item===b.Item)||{}, sz=String(it.Sizes||'').split(',').map(x=>x.trim()).filter(Boolean);
+  if(!sz.length) return esc(l.size||'–');
+  const opts=sz.indexOf(l.size)<0&&l.size?[l.size].concat(sz):sz;
+  return `<select class="hs_${id}" data-pid="${esc(l.pid)}" style="min-width:70px">${opts.map(s=>`<option ${s===l.size?'selected':''}>${esc(s)}</option>`).join('')}</select>`;
+}
+async function hoEditSave(id,silent){
+  const qs=[...document.querySelectorAll('.hq_'+id)]; if(!qs.length) return true;
+  const lines=qs.map(q=>{ const s=document.querySelector('.hs_'+id+'[data-pid="'+q.dataset.pid+'"]'); return {pid:q.dataset.pid,size:s?s.value:'',qty:Number(q.value)}; });
+  const r=await api({action:'handoverEdit',pin:S.pin,batch:id,lines}); const el=$('hg_'+id);
+  if(!r.ok){ if(el) el.innerHTML='<div class="err">'+E(r)+'</div>'; return false; }
+  if(!silent){ await vHandover(); const e2=$('hg_'+id); if(e2) e2.innerHTML='<div class="small">'+t('hoEdited')+': '+r.changed+'</div>'; }
+  return true;
+}
 async function hoGive(id){
+  if(!(await hoEditSave(id,true))) return;
   const pids=[...document.querySelectorAll('.hk_'+id+':checked')].map(c=>c.value); if(!pids.length) return;
   const r=await api({action:'handoverGive',pin:S.pin,batch:id,pids}); if(!r.ok){ $('hg_'+id).innerHTML='<div class="err">'+E(r)+'</div>'; return; }
   const bad2=r.results.filter(x=>!x.ok), none=r.results.filter(x=>x.ok&&x.mail!=='sent').length;

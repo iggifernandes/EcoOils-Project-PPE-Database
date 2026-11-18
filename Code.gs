@@ -1,4 +1,4 @@
-const VERSION = '2.19.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
+const VERSION = '2.20.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
@@ -198,6 +198,7 @@ function doPost(e) {
       case 'history': return json_(history_(p));
       case 'handoverInfo': return json_(handoverInfo_());
       case 'handoverCreate': return json_(handoverCreate_(p, u));
+      case 'handoverEdit': return json_(handoverEdit_(p, u));
       case 'handoverGive': return json_(handoverGive_(p, u));
       case 'handoverUndo': return json_(handoverUndo_(p, u));
       case 'handoverUpload': return json_(handoverUpload_(p, u));
@@ -799,6 +800,28 @@ function handoverCreate_(p, u) {
     hoSheet_('Handovers').appendRow([id, new Date(), it.Item, String(p.title || '').slice(0, 80), JSON.stringify(lines), u.name]);
     audit_(id, 'HANDOVER_LIST', u.name, it.Item + ' / ' + lines.length + ' people / ' + lines.reduce(function (s, x) { return s + x.qty; }, 0) + ' pcs');
     return { ok: true, id: id };
+  } finally { lock.releaseLock(); }
+}
+/* Edit size / qty of people NOT yet handed over in a batch (approver only). Lines already handed over are locked: use Undo (reason required), edit, then hand over again. */
+function handoverEdit_(p, u) {
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const b = hoBatch_(p.batch); if (!b) return { ok: false, error: 'NOT_FOUND' };
+    const it = catItem_(rows_('Items'), String(b.item || '')); if (!it) return { ok: false, error: 'BAD_LINE', detail: String(b.item || '') };
+    const sizes = String(it.Sizes || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean), changes = [];
+    const src = (p.lines || []).slice(0, 200);
+    for (let i = 0; i < src.length; i++) {
+      const e = src[i], l = b.lines.filter(function (x) { return String(x.pid) === String(e.pid); })[0];
+      if (!l) return { ok: false, error: 'NOT_FOUND' };
+      if (l.req) return { ok: false, error: 'BAD_LINE', detail: l.name + ': already handed over, use Undo first' };
+      const q = Math.floor(Number(e.qty)), sz = String(e.size || '');
+      if (!(q >= 1 && q <= 10)) return { ok: false, error: 'BAD_LINE', detail: l.name + ': qty' };
+      if (sizes.length && sizes.indexOf(sz) < 0) return { ok: false, error: 'BAD_LINE', detail: l.name + ': size ' + sz };
+      if (String(l.size || '') !== sz || Number(l.qty) !== q) changes.push(l.name + ' ' + (l.size || '-') + 'x' + l.qty + ' -> ' + (sz || '-') + 'x' + q);
+      l.size = sz; l.qty = q;
+    }
+    if (changes.length) { hoSave_(b); audit_(b.id, 'HANDOVER_EDIT', u.name, changes.join('; ').slice(0, 450)); }
+    return { ok: true, changed: changes.length };
   } finally { lock.releaseLock(); }
 }
 function handoverMail_(per, line, item, reqId, receipt, by, now) {
