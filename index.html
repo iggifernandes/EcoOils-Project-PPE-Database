@@ -96,7 +96,7 @@ header.eh .eh-l button.on,header.eh .eh-l button.active,header.eh .eh-l button[a
 <script>
 /* ======= CONFIG: paste your Apps Script Web App URL below ======= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzbZS0jQPbOaY_QNGS9zDa9YtjLS-JKyh8I3fr3nIZYYTBY-zTp1WNLQuXNxDJgRBx1/exec';
-const VERSION = 'v2.23.0';
+const VERSION = 'v2.24.0';
 document.getElementById('ver').textContent = VERSION;
 
 const T = {
@@ -165,8 +165,8 @@ Object.assign(T.id,{trainTab:'Pelatihan',trainStaff:'Pelatihan',
  trQuiz:'Kuis',trCheck:'Periksa jawaban',trScore:'Nilai Anda',trPass:'Lulus',trRetry:'Belum – pelajari lagi bagian di atas dan coba lagi (nilai lulus 80%).',trAll:'Jawab semua pertanyaan dahulu.',
  trRecord:'Catat pelatihan saya',trRecorded:'Pelatihan tercatat. Terima kasih.',trWho:'Siapa Anda?',trKit:'Minta paket karyawan baru',trPrint:'Cetak / simpan sebagai PDF',
  trNeed:'Ikuti pelatihan APD',trUrgentCk:'Saya tidak punya perlindungan tanpa item ini – lepaskan sekarang. Saya akan menyelesaikan pelatihan dalam 7 hari.',trUrgentGo:'Kirim permintaan mendesak',trUntil:'berlaku sampai',trRule:'Wajib sebelum setiap permintaan APD. Lulus (80% atau lebih) berlaku 12 bulan. Pimpinan senior dapat dibebaskan oleh HSSE.',trStatus:'Status',trValid:'Berlaku',trExpired:'Kedaluwarsa',trNone:'Belum',trExempt:'Dibebaskan',trExemptCol:'Bebas',trPeople:'Personel Proyek – status pelatihan',trExemptNote:'Centang untuk membebaskan seseorang dari pelatihan APD',f_TRAINING_PENDING:'Pelatihan belum dilakukan – dilepas mendesak, batas waktu ',trRight:'Benar',trWrong:'Kurang tepat',trTrained:'Catatan pelatihan',trDate:'Tanggal',trScoreL:'Nilai'});
-Object.assign(T.en.ERR,{AUTO_QTY:'Maximum 10 per line for items that need no approval.'});
-Object.assign(T.id.ERR,{AUTO_QTY:'Maksimal 10 per baris untuk item tanpa persetujuan.'});
+Object.assign(T.en.ERR,{WRONG_PIN:'Wrong email or PIN.',WEAK_PIN:'Choose a PIN that is not easy to guess.',PIN_FORMAT:'The PIN must be 6 digits.',CONFIRM_REQUIRED:'Type RESET to confirm.',AUTO_QTY:'Maximum 10 per line for items that need no approval.'});
+Object.assign(T.id.ERR,{WRONG_PIN:'Email atau PIN salah.',WEAK_PIN:'Pilih PIN yang tidak mudah ditebak.',PIN_FORMAT:'PIN harus 6 digit.',CONFIRM_REQUIRED:'Ketik RESET untuk konfirmasi.',AUTO_QTY:'Maksimal 10 per baris untuk item tanpa persetujuan.'});
 Object.assign(T.en,{emailL:'Your own email (the code is sent here)',newEmailNote:'New joiner: enter your own email. The code is sent there and you show your ID at the store. After a correct issue you are added to the register automatically. No email yet? Choose a sponsor instead.',noEmailSpon:'No email yet? Choose a sponsor instead',scanMs:'Imbas untuk memohon PPE'});
 Object.assign(T.en.ERR,{BAD_EMAIL:'Enter a valid email.',EMAIL_IN_USE:'This email already belongs to someone in the register – choose your name from the list.'});
 Object.assign(T.id,{emailL:'Email Anda sendiri (kode dikirim ke sini)',newEmailNote:'Karyawan baru: masukkan email Anda sendiri. Kode dikirim ke sana dan Anda menunjukkan ID di gudang. Setelah penyerahan yang benar Anda otomatis ditambahkan ke daftar. Belum punya email? Pilih sponsor.',noEmailSpon:'Belum punya email? Pilih sponsor',scanMs:'Imbas untuk memohon PPE'});
@@ -232,18 +232,18 @@ Object.assign(T.ms,{poolL:'Pool',p_Project:'Projek',p_Asset:'Aset',p_All:'Semua'
  bulkT:'Muat naik stok (penghantaran / kiraan awal)',bulkHint:'Satu baris setiap item: Nama item, Saiz, Kuantiti. Contoh: Safety Boots (S3), 42, 10. Kosongkan saiz jika item tiada saiz. Kuantiti DITAMBAH ke pool yang dipilih.',bulkRef:'Nota penghantaran / rujukan',bulkGo:'Muat naik',bulkOk:'Baris dimuat naik',
  singleAdd:'Tambah satu item',poolLoans:'Pinjaman pool (antara Projek dan Aset)',poolLoansNote:'Apabila satu pool kekurangan, stor boleh mengeluarkan dari pool lain. Direkodkan di sini. Bayar balik apabila stok baharu tiba – stok bergerak balik secara automatik.',repay:'Bayar balik',repayQty:'Berapa banyak dibayar balik?',leftL:'baki',lentBy:'dipinjamkan oleh',toL:'ke',noDebts:'Tiada pinjaman pool terbuka.',settled:'Selesai',
  borrowQ:'Stok dalam pool pemohon tidak mencukupi. Keluarkan dari pool lain dan rekod sebagai pinjaman pool untuk dibayar balik kemudian?',borrowedL:'Dipinjam dari pool lain',lendPool:'Ambil stok dari'});
-Object.assign(T.ms.ERR,{POOL_SHORT:'Stok dalam pool ini tidak mencukupi.',WRONG_POOL:'Permintaan ini milik pool lain – pelulus lain mengendalikannya.',BAD_LINE:'Semak baris muat naik ini.',ALREADY_SETTLED:'Sudah selesai.'});
+Object.assign(T.ms.ERR,{WRONG_PIN:'E-mel atau PIN salah.',WEAK_PIN:'Pilih PIN yang tidak mudah diteka.',PIN_FORMAT:'PIN mesti 6 digit.',CONFIRM_REQUIRED:'Taip RESET untuk sahkan.',POOL_SHORT:'Stok dalam pool ini tidak mencukupi.',WRONG_POOL:'Permintaan ini milik pool lain – pelulus lain mengendalikannya.',BAD_LINE:'Semak baris muat naik ini.',ALREADY_SETTLED:'Sudah selesai.'});
 Object.assign(T.en,{hoNote:'Notes (sent in the handover email)',hoNoteHint:'e.g. Please check the size and report any fault within 7 days.',hoEml:'.eml'});
 Object.assign(T.id,{hoNote:'Catatan (dikirim di email serah terima)',hoNoteHint:'mis. Mohon periksa ukuran dan laporkan kerusakan dalam 7 hari.',hoEml:'.eml'});
 if(T.ms) Object.assign(T.ms,{hoNote:'Nota (dihantar dalam e-mel serahan)',hoNoteHint:'cth. Sila semak saiz dan laporkan kerosakan dalam 7 hari.',hoEml:'.eml'});
 Object.assign(T.en,{hoSaveEdit:'Save size / qty changes',hoEdited:'Lines changed'});
 Object.assign(T.id,{hoSaveEdit:'Simpan perubahan ukuran / jumlah',hoEdited:'Baris diubah'});
 if(T.ms) Object.assign(T.ms,{hoSaveEdit:'Simpan perubahan saiz / kuantiti',hoEdited:'Baris diubah'});
-Object.assign(T.en,{emailStaff:'Your work email',sendCode:'Send me a login code',codeSentTo:'A 6-digit code was sent to',enterCode:'Enter the code',verify:'Log in',changeEmail:'Use another email',sessionEnded:'Your session ended. Please log in again.'});
+Object.assign(T.en,{staffTab:'Staff login',pinL:'PIN (6 digits)',loginB:'Log in',forgotPin:'Forgot PIN / set PIN',setPinT:'Set your PIN',newPin:'New PIN (6 digits)',newPin2:'Repeat new PIN',savePin:'Save PIN and log in',pinMis:'The two PINs do not match.',pinSix:'The PIN must be 6 digits.',emailStaff:'Your work email',sendCode:'Send me a login code',codeSentTo:'A 6-digit code was sent to',enterCode:'Enter the code',verify:'Log in',changeEmail:'Use another email',sessionEnded:'Your session ended. Please log in again.'});
 Object.assign(T.en.ERR,{BAD_EMAIL:'Enter a valid email.',BAD_CODE:'Wrong code.',CODE_EXPIRED:'The code expired. Ask for a new one.',LOCKED_TRY_LATER:'Too many tries. Please wait a while.',EMAIL_FAILED:'The email could not be sent. Try again.',SESSION_EXPIRED:'Your session ended. Please log in again.'});
-Object.assign(T.id,{emailStaff:'Email kerja Anda',sendCode:'Kirim kode masuk',codeSentTo:'Kode 6 digit dikirim ke',enterCode:'Masukkan kode',verify:'Masuk',changeEmail:'Pakai email lain',sessionEnded:'Sesi berakhir. Silakan masuk lagi.'});
+Object.assign(T.id,{staffTab:'Masuk staf',pinL:'PIN (6 digit)',loginB:'Masuk',forgotPin:'Lupa PIN / atur PIN',setPinT:'Atur PIN Anda',newPin:'PIN baru (6 digit)',newPin2:'Ulangi PIN baru',savePin:'Simpan PIN dan masuk',pinMis:'Kedua PIN tidak sama.',pinSix:'PIN harus 6 digit.',emailStaff:'Email kerja Anda',sendCode:'Kirim kode masuk',codeSentTo:'Kode 6 digit dikirim ke',enterCode:'Masukkan kode',verify:'Masuk',changeEmail:'Pakai email lain',sessionEnded:'Sesi berakhir. Silakan masuk lagi.'});
 Object.assign(T.id.ERR,{BAD_EMAIL:'Masukkan email yang valid.',BAD_CODE:'Kode salah.',CODE_EXPIRED:'Kode kedaluwarsa. Minta kode baru.',LOCKED_TRY_LATER:'Terlalu banyak percobaan. Tunggu sebentar.',EMAIL_FAILED:'Email tidak dapat dikirim. Coba lagi.',SESSION_EXPIRED:'Sesi berakhir. Silakan masuk lagi.'});
-Object.assign(T.ms,{emailStaff:'E-mel kerja anda',sendCode:'Hantar kod log masuk',codeSentTo:'Kod 6 digit dihantar ke',enterCode:'Masukkan kod',verify:'Log masuk',changeEmail:'Guna e-mel lain',sessionEnded:'Sesi tamat. Sila log masuk semula.'});
+Object.assign(T.ms,{staffTab:'Log masuk staf',pinL:'PIN (6 digit)',loginB:'Log masuk',forgotPin:'Lupa PIN / tetapkan PIN',setPinT:'Tetapkan PIN anda',newPin:'PIN baharu (6 digit)',newPin2:'Ulang PIN baharu',savePin:'Simpan PIN dan log masuk',pinMis:'Kedua-dua PIN tidak sepadan.',pinSix:'PIN mesti 6 digit.',emailStaff:'E-mel kerja anda',sendCode:'Hantar kod log masuk',codeSentTo:'Kod 6 digit dihantar ke',enterCode:'Masukkan kod',verify:'Log masuk',changeEmail:'Guna e-mel lain',sessionEnded:'Sesi tamat. Sila log masuk semula.'});
 Object.assign(T.ms.ERR,{BAD_EMAIL:'Masukkan e-mel yang sah.',BAD_CODE:'Kod salah.',CODE_EXPIRED:'Kod tamat tempoh. Minta kod baharu.',LOCKED_TRY_LATER:'Terlalu banyak cubaan. Sila tunggu sebentar.',EMAIL_FAILED:'E-mel tidak dapat dihantar. Cuba lagi.',SESSION_EXPIRED:'Sesi tamat. Sila log masuk semula.'});
 Object.assign(T.en.ERR,{BAD_DOMAIN:'Use your company email (@ecooils.com.my or @ecooils.co.id).'});
 Object.assign(T.id.ERR,{BAD_DOMAIN:'Gunakan email perusahaan Anda (@ecooils.com.my atau @ecooils.co.id).'});
@@ -339,7 +339,7 @@ function careView(){
 function careRow(sel){ const w=sel.closest('.rw'); if(!w) return; const c=w.querySelector('.care'); c.innerHTML = itemHint(sel.value)+(sel.value?careDetails(sel.value):''); if($('splitnote')) splitNote(); }
 function repNote(){ const r=$('rsn').value; $('rnote').innerHTML = r.startsWith('Replacement')?`<div class="small" style="background:#fff6d6;border-radius:8px;padding:8px;margin-top:6px">${t('repNote')}</div>`:''; $('fac').classList.toggle('hide',r!=='Lost'); }
 async function empInit(){
-  $('app').innerHTML = `<div class="tabs"><button id="tN" onclick="eTab='new';empInit()">${t('newReq')}</button><button id="tM" onclick="eTab='mine';empInit()">${t('mine')}</button><button id="tC" onclick="eTab='care';empInit()">${t('careTab')}</button><button id="tT" onclick="eTab='train';empInit()">${t('trainTab')}</button></div><div id="pane"></div>`;
+  $('app').innerHTML = `<div class="tabs"><button id="tN" onclick="eTab='new';empInit()">${t('newReq')}</button><button id="tM" onclick="eTab='mine';empInit()">${t('mine')}</button><button id="tC" onclick="eTab='care';empInit()">${t('careTab')}</button><button id="tT" onclick="eTab='train';empInit()">${t('trainTab')}</button><button id="tS" onclick="location.href=BASE+'?mode=staff'">${t('staffTab')}</button></div><div id="pane"></div>`;
   $('tN').className = eTab==='new'?'on':''; $('tM').className = eTab==='mine'?'on':''; $('tC').className = eTab==='care'?'on':''; $('tT').className = eTab==='train'?'on':'';
   if(eTab==='mine') return mineView();
   if(eTab==='care') return careView();
@@ -555,19 +555,31 @@ const KEEP = (()=>{ try{ return localStorage.getItem('ppe_keep')==='1'; }catch(e
 let S = {keep:KEEP,loanNames:[],pin:STO.getItem('ppe_pin')||'',role:STO.getItem('ppe_role')||'',name:STO.getItem('ppe_name')||'',pool:STO.getItem('ppe_pool')||'All',pv:'All',tab:'',q:[],recs:[],filt:'All',hl:qs.get('req')||''};
 function staffInit(){ if(!S.pin) return staffLogin(); staffShell(); }
 function staffLogin(note){
-  $('app').innerHTML = `<div class="card">${note?`<div class="small" style="margin-bottom:8px">${esc(note)}</div>`:''}<label>${t('emailStaff')}</label><input id="emI" type="email" inputmode="email" autocomplete="username" value="${esc(S.email||'')}"><label style="display:flex;gap:10px;align-items:center;margin:12px 0"><input type="checkbox" id="kpI" style="width:auto"${S.keep?' checked':''}> ${t('keepMe')}</label><button class="p" id="scB" onclick="sendCode()">${t('sendCode')}</button><div id="msg"></div></div>`;
+  $('app').innerHTML = `<div class="card">${note?`<div class="small" style="margin-bottom:8px">${esc(note)}</div>`:''}<label>${t('emailStaff')}</label><input id="emI" type="email" inputmode="email" autocomplete="username" value="${esc(S.email||'')}"><label>${t('pinL')}</label><input id="pnI" type="password" class="otp" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="••••••" onkeydown="if(event.key==='Enter')pinLogin()"><label style="display:flex;gap:10px;align-items:center;margin:12px 0"><input type="checkbox" id="kpI" style="width:auto"${S.keep?' checked':''}> ${t('keepMe')}</label><button class="p" id="scB" onclick="pinLogin()">${t('loginB')}</button><button class="s" style="margin-top:8px" onclick="sendCode()">${t('forgotPin')}</button><div id="msg"></div></div>`;
+}
+function finishLogin(r){
+  S.pin=r.token; S.role=r.role; S.name=r.name; S.pool=r.pool||'All'; S.owner=!!r.owner; clearSess(); try{ localStorage.setItem('ppe_keep',S.keepWant?'1':'0'); }catch(e){} const ST=S.keepWant?localStorage:sessionStorage; try{ ST.setItem('ppe_pool',S.pool); ST.setItem('ppe_pin',r.token); ST.setItem('ppe_role',r.role); ST.setItem('ppe_name',r.name); }catch(e){} S.keep=S.keepWant; S.tab=''; staffShell();
+}
+async function pinLogin(){
+  const em = $('emI').value.trim(); S.email = em; S.keepWant = !!($('kpI')&&$('kpI').checked); $('scB').disabled = true;
+  const r = await api({action:'pinLogin',email:em,pin:$('pnI').value.trim(),keep:S.keepWant});
+  if(!r.ok){ $('scB').disabled=false; return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>'; }
+  finishLogin(r);
 }
 async function sendCode(){
-  const em = $('emI').value.trim(); S.email = em; S.keepWant = !!($('kpI')&&$('kpI').checked); $('scB').disabled = true;
-  const r = await api({action:'loginStart',email:em});
-  if(!r.ok){ $('scB').disabled=false; return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>'; }
-  $('app').innerHTML = `<div class="card"><div class="small">${t('codeSentTo')} <b>${esc(em)}</b></div><label>${t('enterCode')}</label><input id="cdI" class="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"><button class="p" id="vB" onclick="doLogin()">${t('verify')}</button><button class="s" style="margin-top:8px" onclick="staffLogin()">${t('changeEmail')}</button><div id="msg"></div></div>`;
+  const em = ($('emI')||{value:S.email||''}).value.trim(); S.email = em; S.keepWant = !!($('kpI')&&$('kpI').checked); if($('scB')) $('scB').disabled = true;
+  const r = await api({action:'loginStart',email:em,purpose:'pin'});
+  if(!r.ok){ if($('scB')) $('scB').disabled=false; return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>'; }
+  $('app').innerHTML = `<div class="card"><b>${t('setPinT')}</b><div class="small">${t('codeSentTo')} <b>${esc(em)}</b></div><label>${t('enterCode')}</label><input id="cdI" class="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••"><label>${t('newPin')}</label><input id="np1" type="password" class="otp" inputmode="numeric" maxlength="6" autocomplete="new-password"><label>${t('newPin2')}</label><input id="np2" type="password" class="otp" inputmode="numeric" maxlength="6" autocomplete="new-password"><button class="p" id="vB" onclick="doLogin()">${t('savePin')}</button><button class="s" style="margin-top:8px" onclick="staffLogin()">${t('changeEmail')}</button><div id="msg"></div></div>`;
   $('cdI').focus();
 }
 async function doLogin(){
-  const r = await api({action:'loginVerify',email:S.email,code:$('cdI').value.trim(),keep:!!S.keepWant});
+  const a=$('np1').value.trim(), b=$('np2').value.trim();
+  if(!/^\d{6}$/.test(a)) return $('msg').innerHTML = '<div class="err">'+t('pinSix')+'</div>';
+  if(a!==b) return $('msg').innerHTML = '<div class="err">'+t('pinMis')+'</div>';
+  const r = await api({action:'pinSet',email:S.email,code:$('cdI').value.trim(),newPin:a,keep:!!S.keepWant});
   if(!r.ok) return $('msg').innerHTML = '<div class="err">'+E(r)+'</div>';
-  S.pin=r.token; S.role=r.role; S.name=r.name; S.pool=r.pool||'All'; S.owner=!!r.owner; clearSess(); try{ localStorage.setItem('ppe_keep',S.keepWant?'1':'0'); }catch(e){} const ST=S.keepWant?localStorage:sessionStorage; try{ ST.setItem('ppe_pool',S.pool); ST.setItem('ppe_pin',r.token); ST.setItem('ppe_role',r.role); ST.setItem('ppe_name',r.name); }catch(e){} S.keep=S.keepWant; S.tab=''; staffShell();
+  finishLogin(r);
 }
 function clearSess(){ ['ppe_pin','ppe_role','ppe_name','ppe_pool'].forEach(k=>{ try{ sessionStorage.removeItem(k); localStorage.removeItem(k); }catch(e){} }); }
 function logout(){ const p=S.pin; if(p) api({action:'logout',pin:p}); clearSess(); try{ localStorage.setItem('ppe_keep','0'); }catch(e){} S.keep=false; S.pin=''; staffLogin(); }
@@ -900,7 +912,14 @@ async function vAdmin(){
   $('pane').innerHTML='…'; const r = await api({action:'itemList',pin:S.pin});
   if(!r.ok){ if(!bad(r)) $('pane').innerHTML='<div class="err">'+E(r)+'</div>'; return; }
   const cats = [...new Set(r.items.map(i=>i.Category))];
-  $('pane').innerHTML = `<div class="card"><b>${t('apprReq')}</b><div class="small">${t('adminIntro')}</div></div>` + cats.map(c=>`<div class="card"><b>${esc(c)}</b>${r.items.filter(i=>i.Category===c).map(i=>`<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--l);padding:8px 0"><span>${esc(i.Item)}</span><select style="width:auto" onchange="setAppr('${esc(i.Item)}',this)"><option value="Yes" ${String(i.Approval||'Yes').toLowerCase()==='no'?'':'selected'}>${t('apprYes')}</option><option value="No" ${String(i.Approval||'Yes').toLowerCase()==='no'?'selected':''}>${t('apprNo')}</option></select></div>`).join('')}</div>`).join('') + '<div id="amsg"></div>';
+  $('pane').innerHTML = `<div class="card"><b>${t('apprReq')}</b><div class="small">${t('adminIntro')}</div></div>` + (S.owner?`<div class="card" style="border-left:6px solid #231f20"><b>Reset test data</b><div class="small">Sets all stock to 0 and clears the test records. Keeps people, items catalogue, users and training results.</div><select id="rsScope"><option value="all">Everything (stock, deliveries, requests, loans, handovers)</option><option value="stock">Stock only (stock, stock log, deliveries)</option></select><input id="rsConf" placeholder="Type RESET" autocomplete="off"><button onclick="resetData()">Reset to 0</button><div id="rsMsg"></div></div>`:'') + cats.map(c=>`<div class="card"><b>${esc(c)}</b>${r.items.filter(i=>i.Category===c).map(i=>`<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--l);padding:8px 0"><span>${esc(i.Item)}</span><select style="width:auto" onchange="setAppr('${esc(i.Item)}',this)"><option value="Yes" ${String(i.Approval||'Yes').toLowerCase()==='no'?'':'selected'}>${t('apprYes')}</option><option value="No" ${String(i.Approval||'Yes').toLowerCase()==='no'?'selected':''}>${t('apprNo')}</option></select></div>`).join('')}</div>`).join('') + '<div id="amsg"></div>';
+}
+async function resetData(){
+  const sc = ($('rsScope')||{}).value||'all', c = ($('rsConf')||{}).value||'';
+  if(c.trim().toUpperCase()!=='RESET'){ $('rsMsg').innerHTML='<div class="err">Type RESET to confirm.</div>'; return; }
+  if(!confirm(sc==='stock'?'Set ALL stock to 0 and clear the stock log and deliveries?':'Clear ALL test data (stock, deliveries, requests, loans, handovers)? This cannot be undone.')) return;
+  $('rsMsg').innerHTML='…'; const r = await api({action:'resetData',pin:S.pin,scope:sc,confirm:c});
+  $('rsMsg').innerHTML = r.ok?'<div class="ok">Done. Stock is 0 and the test records are cleared. You can now enter the new stock.</div>':'<div class="err">'+E(r)+'</div>';
 }
 async function setAppr(item,sel){ const r = await api({action:'itemApproval',pin:S.pin,item,approval:sel.value}); $('amsg').innerHTML = r.ok?'':'<div class="err">'+E(r)+'</div>'; if(!r.ok) vAdmin(); }
 function stockViz(r){

@@ -1,4 +1,4 @@
-const VERSION = '2.21.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
+const VERSION = '2.22.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
@@ -17,7 +17,7 @@ const SHEETS = {
   Items: ['Item', 'Category', 'Sizes', 'ServiceLifeDays', 'Kit', 'Loan', 'Approval'],
   Stock: ['Item', 'Size', 'OnHand', 'MinLevel', 'Pool'],
   StockLog: ['Timestamp', 'Item', 'Size', 'Change', 'Reason', 'Ref', 'Actor', 'Pool'],
-  Users: ['Name', 'Role', 'PIN', 'Active', 'Email', 'Pool'],   // PIN is no longer used (login = email + emailed one-time code); the column is kept so old sheets still work
+  Users: ['Name', 'Role', 'PIN', 'Active', 'Email', 'Pool'],   // PIN = salted hash of the staff 6-digit PIN (set only via the emailed-code reset, pinSet); never plain text so old sheets still work
   Requests: ['ReqID', 'CreatedAt', 'PersonID', 'Name', 'Company', 'Email', 'Verified', 'Sponsor', 'Items', 'Reason', 'Remark',
     'PhotoId', 'Flags', 'Status', 'TokenHash', 'ApprovedBy', 'ApprovedAt', 'ApprovedItems', 'OtpHash', 'OtpExpires', 'Tries',
     'IssuedBy', 'IssuedAt', 'ReceiptCode', 'Note', 'Reminded', 'Pool'],
@@ -163,6 +163,8 @@ function doPost(e) {
       case 'trainDone': return json_(trainDone_(p));
       case 'loginStart': return json_(loginStart_(p));
       case 'loginVerify': return json_(loginVerify_(p));
+      case 'pinLogin': return json_(pinLogin_(p));
+      case 'pinSet': return json_(pinSet_(p));
       case 'logout': return json_(logout_(p));
     }
     // ---- staff (session token from the emailed-code login; sent in the field 'pin') ----
@@ -189,6 +191,7 @@ function doPost(e) {
     }
     if (!isA) return json_({ ok: false, error: 'NOT_ALLOWED' });
     switch (p.action) {
+      case 'resetData': return json_(resetData_(p, u));
       case 'approve': return json_(approve_(p, u));
       case 'reject': return json_(reject_(p, u));
       case 'void': return json_(void_(p, u));
@@ -283,8 +286,8 @@ function loginStart_(p) {
   if (u) {
     const code = String(Math.floor(100000 + Math.random() * 900000));
     c.put('lc_' + key, hash_('code|' + em + '|' + code), LOGIN_CODE_MIN * 60); c.remove('lt_' + key);
-    try { mail_(u.Email, 'PPE staff login code', tpl_('Staff login / Masuk staf / Log masuk kakitangan',
-      '<p>Dear ' + esc_(u.Name) + ',</p><p>Your login code / Kode masuk / Kod log masuk:</p>' +
+    try { mail_(u.Email, p.purpose === 'pin' ? 'PPE PIN reset code' : 'PPE staff login code', tpl_(p.purpose === 'pin' ? 'Set or reset your PIN / Atur ulang PIN / Tetapkan semula PIN' : 'Staff login / Masuk staf / Log masuk kakitangan',
+      '<p>Dear ' + esc_(u.Name) + ',</p><p>' + (p.purpose === 'pin' ? 'Code to set or reset your PIN / Kode untuk mengatur PIN / Kod untuk menetapkan PIN:' : 'Your login code / Kode masuk / Kod log masuk:') + '</p>' +
       '<p style="font-size:36px;letter-spacing:8px;text-align:center;font-weight:bold;color:#0b5d3b;background:#e8f3ee;padding:12px;border-radius:8px">' + code + '</p>' +
       '<p style="font-size:13px;color:#555">Valid ' + LOGIN_CODE_MIN + ' minutes. Do not share it. If you did not ask for it, ignore this email. / Berlaku ' + LOGIN_CODE_MIN + ' menit. Jangan dibagikan. / Sah ' + LOGIN_CODE_MIN + ' minit. Jangan kongsi.</p>')); }
     catch (e) { return { ok: false, error: 'EMAIL_FAILED' }; }
@@ -304,6 +307,64 @@ function loginVerify_(p) {
   if (p.keep) keepSession_(token, em);
   audit_('LOGIN', 'STAFF_LOGIN', u.Name, em);
   const o = userInfo_(u); o.token = token; o.version = VERSION; o.keep = !!p.keep; if (o.owner) o.pool = 'All'; return o;
+}
+/* ===== Reset test data (v2.22): OWNER only, typed confirmation. Stock quantities -> 0 (rows, sizes and minimum levels kept) and the movement log, deliveries,
+ * requests, loans, handovers and signed-sheet records are emptied. Users, Items catalogue, Personnel, Recipients and Training results are KEPT.
+ * scope 'stock' = stock + deliveries + stock log only; 'all' = everything above. Files already in Drive are not deleted. One Audit line is written. ===== */
+function resetData_(p, u) {
+  if (!u.owner) return { ok: false, error: 'NOT_ALLOWED' };
+  if (String(p.confirm || '').trim().toUpperCase() !== 'RESET') return { ok: false, error: 'CONFIRM_REQUIRED' };
+  const scope = p.scope === 'stock' ? 'stock' : 'all', lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const clear = function (n) { const sh = sh_(n); if (sh && sh.getLastRow() > 1) sh.deleteRows(2, sh.getLastRow() - 1); };
+    const st = sh_('Stock');
+    if (st && st.getLastRow() > 1) { const h = st.getRange(1, 1, 1, st.getLastColumn()).getValues()[0], oi = h.indexOf('OnHand'); if (oi >= 0) st.getRange(2, oi + 1, st.getLastRow() - 1, 1).setValue(0); }
+    ['StockLog', 'Deliveries'].forEach(clear);
+    if (scope === 'all') ['Requests', 'Loans', 'Handovers', 'HandoverFiles'].forEach(clear);
+    try { CacheService.getScriptCache().removeAll(['stock', 'queue']); } catch (e) {}
+    audit_('', 'RESET_DATA', u.name, 'scope ' + scope);
+    return { ok: true, scope: scope };
+  } finally { lock.releaseLock(); }
+}
+/* ===== Staff PIN login (v2.22): email + 6-digit PIN. A PIN can ONLY be set or changed through the emailed-code reset (pinSet); it is stored salted+hashed in Users.PIN, never in the code. ===== */
+const PIN_MAX_TRIES = 5, PIN_LOCK_MIN = 15;
+function pinHash_(em, pin) { return hash_('pin|' + String(em).toLowerCase() + '|' + pin); }
+function weakPin_(pin) { return /^(\d)\1{5}$/.test(pin) || pin === '123456' || pin === '654321' || pin === '012345' || pin === '123123'; }
+function pinSession_(u, em, keep) {
+  const c = CacheService.getScriptCache(), token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  c.put('s_' + hash_('tok|' + token), em, SESSION_SEC);
+  if (keep) keepSession_(token, em);
+  audit_('LOGIN', 'STAFF_LOGIN', u.Name, em);
+  const o = userInfo_(u); o.token = token; o.version = VERSION; o.keep = !!keep; if (o.owner) o.pool = 'All'; return o;
+}
+function pinLogin_(p) {
+  const em = String(p.email || '').trim().toLowerCase(), pin = String(p.pin || '').trim(), c = CacheService.getScriptCache();
+  if (!validEmail_(em) || !okDomain_(em)) return { ok: false, error: 'WRONG_PIN' };
+  const key = hash_('em|' + em), t = Number(c.get('pt_' + key) || 0), g = Number(c.get('pt_all') || 0);
+  if (t >= PIN_MAX_TRIES || g >= 120) return { ok: false, error: 'LOCKED_TRY_LATER' };
+  const u = userByEmail_(em), ok = !!(u && String(u.PIN || '') && /^\d{6}$/.test(pin) && String(u.PIN) === pinHash_(em, pin));
+  if (!ok) { c.put('pt_' + key, String(t + 1), PIN_LOCK_MIN * 60); c.put('pt_all', String(g + 1), 3600); audit_('LOGIN', 'STAFF_PIN_FAILED', em, 'try ' + (t + 1)); return { ok: false, error: 'WRONG_PIN', left: Math.max(0, PIN_MAX_TRIES - t - 1) }; }
+  c.remove('pt_' + key);
+  return pinSession_(u, em, p.keep);
+}
+/* Step 2 of 'Forgot PIN / set PIN': the emailed code (loginStart with purpose 'pin') + the new PIN twice (checked on the phone too). */
+function pinSet_(p) {
+  const em = String(p.email || '').trim().toLowerCase(), code = String(p.code || '').trim(), np = String(p.newPin || '').trim(), c = CacheService.getScriptCache(), key = hash_('em|' + em);
+  if (!/^\d{6}$/.test(np)) return { ok: false, error: 'PIN_FORMAT' };
+  if (weakPin_(np)) return { ok: false, error: 'WEAK_PIN' };
+  const want = c.get('lc_' + key), t = Number(c.get('lt_' + key) || 0);
+  if (!want) return { ok: false, error: 'CODE_EXPIRED' };
+  if (t >= LOGIN_MAX_TRIES) { c.remove('lc_' + key); return { ok: false, error: 'LOCKED_TRY_LATER' }; }
+  if (hash_('code|' + em + '|' + code) !== want) { c.put('lt_' + key, String(t + 1), LOGIN_CODE_MIN * 60); return { ok: false, error: 'BAD_CODE', left: LOGIN_MAX_TRIES - t - 1 }; }
+  const u = userByEmail_(em); if (!u) return { ok: false, error: 'BAD_CODE' };
+  const sh = sh_('Users'), v = sh.getDataRange().getValues(), ei = v[0].indexOf('Email'), pi = v[0].indexOf('PIN'); let row = 0;
+  for (let i = 1; i < v.length; i++) if (String(v[i][ei]).trim().toLowerCase() === em) { row = i + 1; break; }
+  if (!row || pi < 0) return { ok: false, error: 'SERVER_ERROR' };
+  sh.getRange(row, pi + 1).setValue(pinHash_(em, np));
+  c.remove('lc_' + key); c.remove('lt_' + key); c.remove('pt_' + key);
+  audit_('LOGIN', 'STAFF_PIN_SET', u.Name, em);
+  try { mail_(u.Email, 'PPE PIN changed', tpl_('PIN changed / PIN diubah / PIN diubah', '<p>Dear ' + esc_(u.Name) + ',</p><p>Your PPE staff PIN was set or changed just now. If this was not you, tell HSSE at once. / PIN staf APD Anda baru saja diatur atau diubah. Jika bukan Anda, segera hubungi HSSE. / PIN anda baru sahaja ditetapkan atau diubah. Jika bukan anda, hubungi HSSE segera.</p>')); } catch (e) {}
+  return pinSession_(u, em, p.keep);
 }
 const KEEP_DAYS = 30;   // 'Keep me logged in' sessions
 function keepSession_(token, em) {
