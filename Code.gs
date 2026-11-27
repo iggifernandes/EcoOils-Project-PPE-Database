@@ -1,4 +1,4 @@
-const VERSION = '2.23.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
+const VERSION = '2.24.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
@@ -35,7 +35,8 @@ const REASONS = ['New', 'Replacement-Worn', 'Replacement-Damaged', 'Lost', 'Addi
 /* PPE catalogue = the PPE types in EOCORP-QSP-HS PPE Procedure (section 5 + PPE matrix + glove matrix).
  * Columns: Item, Category, Sizes, ServiceLifeDays, Kit (new-joiner kit), Loan (Only = visitor-only, Yes = visitors may borrow,
  * Always = always a LOAN, tracked until returned), Approval (No = self-service item, no approval needed, code issued at once). */
-const SZ_BODY = 'XS,S,M,L,XL,2XL,3XL,4XL,5XL,6XL', SZ_FOOT = '37,38,39,40,41,42,43,44,45,46', SZ_BOOT = SZ_FOOT + ',UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12', SZ_GLV = 'M,L,XL,6,7,8,9';
+const SZ_BODY = 'XS,S,M,L,XL,2XL,3XL,4XL,5XL,6XL', BOOT_PAIRS = [[4, 37], [5, 38], [6, 39], [6.5, 40], [7, 41], [8, 42], [9, 43], [10, 44], [11, 45], [12, 46]],
+  SZ_FOOT = BOOT_PAIRS.map(function (x) { return 'UK ' + x[0] + ' / EU ' + x[1]; }).join(','), SZ_GLV = 'M,L,XL,6,7,8,9';
 const CATALOG = [
   ['Safety Helmet - White', 'Head', '', 1825, 'No', 'Yes', 'Yes'],
   ['Safety Helmet - Yellow (New Joiner, 1 year)', 'Head', '', 365, 'Yes', 'No', 'Yes'],
@@ -63,7 +64,7 @@ const CATALOG = [
   ['Gloves - Impact Resistant (EN 388)', 'Hand', 'M,L,XL,2XL', 90, 'No', 'No', 'Yes'],
   ['Gloves - Welders Gauntlet', 'Hand', 'M,L,XL', 90, 'No', 'No', 'Yes'],
   ['Gloves - Electrician Insulated Class 2 (EN 60903)', 'Hand', 'M,L,XL', 0, 'No', 'No', 'Yes'],
-  ['Safety Boots (S3)', 'Foot', SZ_BOOT, 365, 'Yes', 'No', 'Yes'],
+  ['Safety Boots (S3)', 'Foot', SZ_FOOT, 365, 'Yes', 'No', 'Yes'],
   ['Chemical Safety Boots', 'Foot', SZ_FOOT, 365, 'No', 'No', 'Yes'],
   ['Full Body Harness', 'Fall Protection', 'S,M,L,XL', 0, 'No', 'Always', 'Yes'],
   ['N95 Dust Mask', 'Respiratory', '', 1, 'No', 'No', 'Yes'],
@@ -134,12 +135,49 @@ function loadProcedureCatalog() {
 /* ================= Entry points ================= */
 /* Self-sync after every deploy: the first request after a new version applies the TEAM list (loadTeamUsers) by itself, so nobody has to run it by hand.
  * Runs as the script owner (web app = Execute as Me). Only the code-defined TEAM is applied; no request input can change what it does. */
-/* v2.23: Safety Boots (S3) keep the EU sizes (37-46, unchanged) AND get separate UK sizes (UK 6 - UK 12) so stock can be counted as printed on the box / DO. Only that one Sizes cell is touched, only if no UK size is there yet. */
-function addBootUkSizes_() {
-  const sh = sh_('Items'); if (!sh || sh.getLastRow() < 2) return;
-  const v = sh.getDataRange().getValues(), ii = v[0].indexOf('Item'), si = v[0].indexOf('Sizes');
-  for (let i = 1; i < v.length; i++) if (String(v[i][ii]).trim() === 'Safety Boots (S3)' && String(v[i][si]).indexOf('UK ') < 0) {
-    const cur = String(v[i][si]).trim() || SZ_FOOT; sh.getRange(i + 1, si + 1).setValue(cur + ',UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12');
+/* v2.24: footwear sizes show UK and EU together, one stock line per pair size ("UK 7 / EU 41"). Maps by the EU number: EU 37-46 = UK 4, 5, 6, 6.5, 7, 8, 9, 10, 11, 12.
+ * bootNorm_ turns an old label ("41", "EU 41", "UK 7") into the new one; anything unknown is left alone. Idempotent. Migrates Items.Sizes, Stock rows (duplicates are summed)
+ * and the sizes inside OPEN requests (Requested / Approved) for Safety Boots (S3) and Chemical Safety Boots. History (StockLog, issued requests) is not rewritten. */
+const BOOT_ITEMS = ['Safety Boots (S3)', 'Chemical Safety Boots'];
+function bootNorm_(sz) {
+  const t = String(sz == null ? '' : sz).trim(); let m, pr;
+  if ((m = /^UK\s*([0-9]+(?:\.[0-9])?)\s*\/\s*EU\s*([0-9]+)$/i.exec(t))) return t;
+  if ((m = /^(?:EU\s*)?([0-9]{2})$/i.exec(t))) pr = BOOT_PAIRS.filter(function (x) { return x[1] === Number(m[1]); })[0];
+  else if ((m = /^UK\s*([0-9]+(?:\.[0-9])?)$/i.exec(t))) pr = BOOT_PAIRS.filter(function (x) { return x[0] === Number(m[1]); })[0];
+  return pr ? 'UK ' + pr[0] + ' / EU ' + pr[1] : t;
+}
+function migrateBootSizes_() {
+  let sh = sh_('Items');
+  if (sh && sh.getLastRow() > 1) {
+    const v = sh.getDataRange().getValues(), ii = v[0].indexOf('Item'), si = v[0].indexOf('Sizes');
+    for (let i = 1; i < v.length; i++) if (BOOT_ITEMS.indexOf(String(v[i][ii]).trim()) >= 0 && String(v[i][si]) !== SZ_FOOT) sh.getRange(i + 1, si + 1).setValue(SZ_FOOT);
+  }
+  sh = sh_('Stock');
+  if (sh && sh.getLastRow() > 1) {
+    const v = sh.getDataRange().getValues(), h = v[0], ii = h.indexOf('Item'), zi = h.indexOf('Size'), oi = h.indexOf('OnHand'), pi = h.indexOf('Pool'), first = {}, drop = [];
+    for (let i = 1; i < v.length; i++) {
+      if (BOOT_ITEMS.indexOf(String(v[i][ii]).trim()) < 0) continue;
+      const nz = bootNorm_(v[i][zi]), key = v[i][ii] + '|' + nz + '|' + String(v[i][pi] || '');
+      if (nz !== String(v[i][zi])) { sh.getRange(i + 1, zi + 1).setValue(nz); v[i][zi] = nz; }
+      if (first[key] === undefined) first[key] = i;
+      else { const f = first[key]; v[f][oi] = Number(v[f][oi] || 0) + Number(v[i][oi] || 0); sh.getRange(f + 1, oi + 1).setValue(v[f][oi]); drop.push(i + 1); }
+    }
+    drop.sort(function (a, b) { return b - a; }).forEach(function (r) { sh.deleteRow(r); });
+  }
+  sh = sh_('Requests');
+  if (sh && sh.getLastRow() > 1) {
+    const v = sh.getDataRange().getValues(), h = v[0], st = h.indexOf('Status'), cols = [h.indexOf('Items'), h.indexOf('ApprovedItems')];
+    for (let i = 1; i < v.length; i++) {
+      if (['Requested', 'Approved'].indexOf(String(v[i][st])) < 0) continue;
+      cols.forEach(function (c) {
+        if (c < 0 || !v[i][c]) return;
+        try {
+          const arr = JSON.parse(v[i][c]); let ch = false;
+          arr.forEach(function (x) { if (BOOT_ITEMS.indexOf(x.item) >= 0) { const nz = bootNorm_(x.size); if (nz !== x.size) { x.size = nz; ch = true; } } });
+          if (ch) sh.getRange(i + 1, c + 1).setValue(JSON.stringify(arr));
+        } catch (e) {}
+      });
+    }
   }
 }
 function autoSync_() {
@@ -151,7 +189,7 @@ function autoSync_() {
     try {
       if (pr.getProperty('TEAM_SYNC_VER') === VERSION) return;
       loadTeamUsers();
-      addBootUkSizes_();
+      migrateBootSizes_();
       pr.setProperty('TEAM_SYNC_VER', VERSION);
     } finally { lock.releaseLock(); }
   } catch (err) { /* never block a request because of the sync; it retries on the next request */ }
