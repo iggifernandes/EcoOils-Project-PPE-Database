@@ -1,4 +1,4 @@
-const VERSION = '2.22.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
+const VERSION = '2.23.0';   // <-- the ONE version line. Bump it on every change (page shows it too)
 /**
  * EcoOils Mentari — PPE Request • Approval • Store Issue System
  * Backend (Google Apps Script bound to the Google Sheet)
@@ -35,7 +35,7 @@ const REASONS = ['New', 'Replacement-Worn', 'Replacement-Damaged', 'Lost', 'Addi
 /* PPE catalogue = the PPE types in EOCORP-QSP-HS PPE Procedure (section 5 + PPE matrix + glove matrix).
  * Columns: Item, Category, Sizes, ServiceLifeDays, Kit (new-joiner kit), Loan (Only = visitor-only, Yes = visitors may borrow,
  * Always = always a LOAN, tracked until returned), Approval (No = self-service item, no approval needed, code issued at once). */
-const SZ_BODY = 'XS,S,M,L,XL,2XL,3XL,4XL,5XL,6XL', SZ_FOOT = '37,38,39,40,41,42,43,44,45,46', SZ_GLV = 'M,L,XL,6,7,8,9';
+const SZ_BODY = 'XS,S,M,L,XL,2XL,3XL,4XL,5XL,6XL', SZ_FOOT = '37,38,39,40,41,42,43,44,45,46', SZ_BOOT = SZ_FOOT + ',UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12', SZ_GLV = 'M,L,XL,6,7,8,9';
 const CATALOG = [
   ['Safety Helmet - White', 'Head', '', 1825, 'No', 'Yes', 'Yes'],
   ['Safety Helmet - Yellow (New Joiner, 1 year)', 'Head', '', 365, 'Yes', 'No', 'Yes'],
@@ -63,7 +63,7 @@ const CATALOG = [
   ['Gloves - Impact Resistant (EN 388)', 'Hand', 'M,L,XL,2XL', 90, 'No', 'No', 'Yes'],
   ['Gloves - Welders Gauntlet', 'Hand', 'M,L,XL', 90, 'No', 'No', 'Yes'],
   ['Gloves - Electrician Insulated Class 2 (EN 60903)', 'Hand', 'M,L,XL', 0, 'No', 'No', 'Yes'],
-  ['Safety Boots (S3)', 'Foot', SZ_FOOT, 365, 'Yes', 'No', 'Yes'],
+  ['Safety Boots (S3)', 'Foot', SZ_BOOT, 365, 'Yes', 'No', 'Yes'],
   ['Chemical Safety Boots', 'Foot', SZ_FOOT, 365, 'No', 'No', 'Yes'],
   ['Full Body Harness', 'Fall Protection', 'S,M,L,XL', 0, 'No', 'Always', 'Yes'],
   ['N95 Dust Mask', 'Respiratory', '', 1, 'No', 'No', 'Yes'],
@@ -134,6 +134,14 @@ function loadProcedureCatalog() {
 /* ================= Entry points ================= */
 /* Self-sync after every deploy: the first request after a new version applies the TEAM list (loadTeamUsers) by itself, so nobody has to run it by hand.
  * Runs as the script owner (web app = Execute as Me). Only the code-defined TEAM is applied; no request input can change what it does. */
+/* v2.23: Safety Boots (S3) keep the EU sizes (37-46, unchanged) AND get separate UK sizes (UK 6 - UK 12) so stock can be counted as printed on the box / DO. Only that one Sizes cell is touched, only if no UK size is there yet. */
+function addBootUkSizes_() {
+  const sh = sh_('Items'); if (!sh || sh.getLastRow() < 2) return;
+  const v = sh.getDataRange().getValues(), ii = v[0].indexOf('Item'), si = v[0].indexOf('Sizes');
+  for (let i = 1; i < v.length; i++) if (String(v[i][ii]).trim() === 'Safety Boots (S3)' && String(v[i][si]).indexOf('UK ') < 0) {
+    const cur = String(v[i][si]).trim() || SZ_FOOT; sh.getRange(i + 1, si + 1).setValue(cur + ',UK 6,UK 7,UK 8,UK 9,UK 10,UK 11,UK 12');
+  }
+}
 function autoSync_() {
   try {
     const pr = PropertiesService.getScriptProperties();
@@ -143,6 +151,7 @@ function autoSync_() {
     try {
       if (pr.getProperty('TEAM_SYNC_VER') === VERSION) return;
       loadTeamUsers();
+      addBootUkSizes_();
       pr.setProperty('TEAM_SYNC_VER', VERSION);
     } finally { lock.releaseLock(); }
   } catch (err) { /* never block a request because of the sync; it retries on the next request */ }
